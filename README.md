@@ -47,6 +47,14 @@ Options:
 ```
 ./mpris-discord-rpc -i 5 -p lastfmusername -y
 ```
+## Flatpak Discord fix
+
+As flatpak applications are sandboxed this makes it difficult for any other programs to communicate with them. But this can be easily fixed using the following command:
+
+```sh
+ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0
+```
+**Unfortunately but it will need to be used every reboot**. So I would also recommend adding this command to the autostart.
 
 ## System usage
 
