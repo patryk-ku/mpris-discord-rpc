@@ -20,7 +20,7 @@ struct Cli {
     interval: u64,
 
     /// Display "Open user's last.fm profile" button
-    #[arg(short, long, value_name = "nickname")]
+    #[arg(short, long, value_name = "nickname", value_parser = clap::value_parser!(String))]
     profile_button: Option<String>,
 
     /// Display "Search this song on YouTube" button
@@ -30,6 +30,14 @@ struct Cli {
     /// Disable cache (not recommended)
     #[arg(short, long)]
     disable_cache: bool,
+
+    /// Displays all available player names and exits. Use to get your players name for -n parameter
+    #[arg(short, long)]
+    list_players: bool,
+
+    /// Get status only from given player name. Use -l to get player exact name to use with this parameter
+    #[arg(short = 'n', long, value_name = "Player Name", value_parser = clap::value_parser!(String))]
+    player_name: Option<String>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -64,6 +72,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Enable/disable use of cache
     let cache_enabled: bool = !args.disable_cache;
     println!("Cache: {}", cache_enabled);
+
+    // List available players and exit
+    let list_players: bool = args.list_players;
+
+    // Get status only from player with given name
+    let mut player_name: String = String::new();
+    let player_name_enabled: bool = match args.player_name {
+        Some(name) => {
+            player_name = name;
+            true
+        }
+        None => false,
+    };
 
     // Vars for activity update detection
     let mut last_title: String = String::new();
@@ -115,8 +136,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
+        // List available players and exit
+        if list_players {
+            match player.find_all() {
+                Ok(player_list) => {
+                    if player_list.is_empty() {
+                        println!("Could not find any player with MPRIS2 support.");
+                    } else {
+                        println!("────────────────────────────────────────────────────");
+                        println!("List of available music players with MPRIS2 support:");
+                        for music_player in &player_list {
+                            println!(" - {}", music_player.identity());
+                        }
+                        println!("────────────────────────────────────────────────────");
+                        println!("Use the name to choose from which source the script should take data for the discord status.");
+                        println!("Usage instruction:");
+                        println!(r#" ./mpris-discord-rpc -n "{}""#, player_list[0].identity());
+                    }
+                }
+                Err(_) => {
+                    println!("Could not find any player with MPRIS2 support.");
+                }
+            };
+            return Ok(());
+        }
+
+        // Get player by name if enabled
+        let player = if player_name_enabled {
+            player.find_by_name(&player_name)
+        } else {
+            player.find_active()
+        };
+
         // Find acive player
-        let player = match player.find_active() {
+        let player = match player {
             Ok(a) => {
                 if player_notif != 1 {
                     println!("Found active player with MPRIS2 support.");
@@ -124,6 +177,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 a
             }
+            // Err(mpris::FindingError::NoPlayerFound) => {}
             Err(_) => {
                 if player_notif != 2 {
                     println!(
@@ -241,8 +295,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if album.is_empty() {
                 album = "Unknown Album";
             }
-            let artist = metadata.artists();
-            let artist = artist.unwrap()[0];
+            let artist = metadata.artists().unwrap_or(vec!["Unknown Artist"]);
+            let artist = artist[0];
             let album_id = format!("{} - {}", artist, album);
 
             let mut metadata_changed: bool = false;
@@ -258,6 +312,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             {
                 metadata_changed = true;
             }
+
+            // TODO: Handle unknown metadata
+            // If all metadata values are unknown then skip
+            // if (artist == "Unknown Artist") & (album == "Unknown Album") & (title == "Unknown Title") {
+            //     println!("Unknown metadata, skipping...");
+            //     sleep(Duration::from_secs(interval));
+            //     break;
+            // }
 
             // Get track position if supported by player else return 0 secs
             let track_position = match player.get_position() {
