@@ -1,14 +1,15 @@
-use cacache;
 use clap::Parser;
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use dotenvy_macro::dotenv;
 use mpris::PlayerFinder;
+use pickledb::{PickleDb, PickleDbDumpPolicy, SerializationMethod};
 use reqwest;
 use serde_json;
 use url_escape;
 
 use std::env;
 use std::ops::Sub;
+use std::path::PathBuf;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 
@@ -108,16 +109,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set cache path
     let home_dir = match env::var("HOME") {
-        Ok(val) => val,
-        Err(_e) => String::from("~/"),
+        Ok(val) => PathBuf::from(val),
+        Err(_) => PathBuf::from("~/"),
     };
     let cache_dir = match env::var("XDG_CACHE_HOME") {
-        Ok(val) => format!("{val}/mpris-discord-rpc"),
-        Err(_e) => format!("{home_dir}/.cache/mpris-discord-rpc"),
+        Ok(val) => {
+            let mut tmp_path = PathBuf::from(val);
+            tmp_path.push("mpris-discord-rpc");
+            tmp_path
+        }
+        Err(_) => {
+            let mut tmp_path = PathBuf::from(home_dir);
+            tmp_path.push(".cache");
+            tmp_path.push("mpris-discord-rpc");
+            tmp_path
+        }
     };
+
     if cache_enabled {
-        println!("Cache location: {cache_dir}");
+        println!("Cache location: {}", &cache_dir.display());
     }
+
+    // Cache file
+    let mut db_path = PathBuf::from(&cache_dir);
+    db_path.push("album_cache.db");
+
+    let mut album_cache = match PickleDb::load(
+        &db_path,
+        PickleDbDumpPolicy::AutoDump,
+        SerializationMethod::Json,
+    ) {
+        Ok(db) => {
+            if cache_enabled {
+                println!("Cache loaded from file: {}", &db_path.display());
+            }
+            db
+        }
+        Err(_) => {
+            if cache_enabled {
+                println!("Generated new cache file: {}", &db_path.display());
+            }
+            PickleDb::new(
+                &db_path,
+                PickleDbDumpPolicy::AutoDump,
+                SerializationMethod::Json,
+            )
+        }
+    };
 
     loop {
         // Connect to MPRIS2
@@ -354,13 +392,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     _cover_url = "missing-cover".to_string();
                 } else {
                     // Load from cache if enabled
-                    let mut cache_url: String = "".to_string();
+                    let mut cache_url: String = String::new();
                     if cache_enabled {
-                        let cache_data = match cacache::read_sync(&cache_dir, &album_id) {
-                            Ok(value) => value,
-                            Err(_) => vec![0],
+                        cache_url = if album_cache.exists(&album_id) {
+                            match album_cache.get(&album_id) {
+                                Some(url) => url,
+                                None => String::new(),
+                            }
+                        } else {
+                            String::new()
                         };
-                        cache_url = std::str::from_utf8(&cache_data).unwrap().to_string();
                     }
 
                     if (!cache_url.is_empty()) & (cache_url.len() > 5) {
@@ -380,14 +421,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                                         // Save cover url to cache
                                         if cache_enabled {
-                                            match cacache::write_sync(
-                                                &cache_dir,
-                                                &album_id,
-                                                url.to_string(),
-                                            ) {
+                                            match album_cache.set(&album_id, &url.to_string()) {
                                                 Ok(_) => println!("[cache] fetched and saved image url for: {album_id}."),
                                                 // _ => (),
-                                                Err(_) => println!("[cache] error, unable to write to cache."),
+                                                Err(_) => println!("[cache] error, unable to write to cache file."),
                                             }
                                         }
                                     } else {
