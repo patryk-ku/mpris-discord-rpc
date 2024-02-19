@@ -50,11 +50,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // User settings parsed from args:
     // Refresh rate (sleep after every loop)
     let interval: u64 = args.interval; // important: min 5 sec
-    println!("Refresh rate: {} seconds", interval);
+    println!("[config] Refresh rate: {} seconds", interval);
 
     // Display "Search this song on YouTube" button under activity
     let show_yt_link: bool = args.yt_button;
-    println!("YT button: {}", show_yt_link);
+    println!("[config] YT button: {}", show_yt_link);
 
     // Display "Open user's last.fm profile" button under activity
     let mut lastfm_nickname: String = String::new();
@@ -65,14 +65,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         None => false,
     };
-    println!("Profile button: {}", show_lastfm_link);
+    println!("[config] Profile button: {}", show_lastfm_link);
     if show_lastfm_link {
-        println!("Nickname set: {}", lastfm_nickname);
+        println!("[config] Nickname set: {}", lastfm_nickname);
     }
 
     // Enable/disable use of cache
     let cache_enabled: bool = !args.disable_cache;
-    println!("Cache: {}", cache_enabled);
+    println!("[config] Cache: {}", cache_enabled);
 
     // List available players and exit
     let list_players: bool = args.list_players;
@@ -82,6 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let player_name_enabled: bool = match args.player_name {
         Some(name) => {
             player_name = name;
+            println!("[config] Player name: {}", player_name);
             true
         }
         None => false,
@@ -127,7 +128,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     if cache_enabled {
-        println!("Cache location: {}", &cache_dir.display());
+        println!("[config] Cache location: {}", &cache_dir.display());
     }
 
     // Cache file
@@ -141,13 +142,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ) {
         Ok(db) => {
             if cache_enabled {
-                println!("Cache loaded from file: {}", &db_path.display());
+                println!("[cache] loaded from file: {}", &db_path.display());
             }
             db
         }
         Err(_) => {
             if cache_enabled {
-                println!("Generated new cache file: {}", &db_path.display());
+                println!("[cache] generated new cache file: {}", &db_path.display());
             }
             PickleDb::new(
                 &db_path,
@@ -419,10 +420,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         url.pop();
                                         url.remove(0);
 
+                                        println!("[last.fm] fetched image link: {url}");
                                         // Save cover url to cache
                                         if cache_enabled {
-                                            match album_cache.set(&album_id, &url.to_string()) {
-                                                Ok(_) => println!("[cache] fetched and saved image url for: {album_id}."),
+                                            match album_cache.set(&album_id, &url) {
+                                                Ok(_) => println!("[cache] saved image url for: {album_id}."),
                                                 // _ => (),
                                                 Err(_) => println!("[cache] error, unable to write to cache file."),
                                             }
@@ -436,8 +438,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             },
                             Err(_) => "missing-cover".to_string(),
                         };
-
-                        println!("Fetched image link: {_cover_url}");
                     }
                 }
             }
