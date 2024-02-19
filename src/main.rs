@@ -1,14 +1,15 @@
-use cacache;
 use clap::Parser;
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use dotenvy_macro::dotenv;
 use mpris::PlayerFinder;
+use pickledb::{PickleDb, PickleDbDumpPolicy, SerializationMethod};
 use reqwest;
 use serde_json;
 use url_escape;
 
 use std::env;
 use std::ops::Sub;
+use std::path::PathBuf;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 
@@ -20,7 +21,7 @@ struct Cli {
     interval: u64,
 
     /// Display "Open user's last.fm profile" button
-    #[arg(short, long, value_name = "nickname")]
+    #[arg(short, long, value_name = "nickname", value_parser = clap::value_parser!(String))]
     profile_button: Option<String>,
 
     /// Display "Search this song on YouTube" button
@@ -30,6 +31,14 @@ struct Cli {
     /// Disable cache (not recommended)
     #[arg(short, long)]
     disable_cache: bool,
+
+    /// Displays all available player names and exits. Use to get your players name for -n parameter
+    #[arg(short, long)]
+    list_players: bool,
+
+    /// Get status only from given player name. Use -l to get player exact name to use with this parameter
+    #[arg(short = 'n', long, value_name = "Player Name", value_parser = clap::value_parser!(String))]
+    player_name: Option<String>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,11 +50,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // User settings parsed from args:
     // Refresh rate (sleep after every loop)
     let interval: u64 = args.interval; // important: min 5 sec
-    println!("Refresh rate: {} seconds", interval);
+    println!("[config] Refresh rate: {} seconds", interval);
 
     // Display "Search this song on YouTube" button under activity
     let show_yt_link: bool = args.yt_button;
-    println!("YT button: {}", show_yt_link);
+    println!("[config] YT button: {}", show_yt_link);
 
     // Display "Open user's last.fm profile" button under activity
     let mut lastfm_nickname: String = String::new();
@@ -56,14 +65,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         None => false,
     };
-    println!("Profile button: {}", show_lastfm_link);
+    println!("[config] Profile button: {}", show_lastfm_link);
     if show_lastfm_link {
-        println!("Nickname set: {}", lastfm_nickname);
+        println!("[config] Nickname set: {}", lastfm_nickname);
     }
 
     // Enable/disable use of cache
     let cache_enabled: bool = !args.disable_cache;
-    println!("Cache: {}", cache_enabled);
+    println!("[config] Cache: {}", cache_enabled);
+
+    // List available players and exit
+    let list_players: bool = args.list_players;
+
+    // Get status only from player with given name
+    let mut player_name: String = String::new();
+    let player_name_enabled: bool = match args.player_name {
+        Some(name) => {
+            player_name = name;
+            println!("[config] Player name: {}", player_name);
+            true
+        }
+        None => false,
+    };
 
     // Vars for activity update detection
     let mut last_title: String = String::new();
@@ -87,16 +110,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set cache path
     let home_dir = match env::var("HOME") {
-        Ok(val) => val,
-        Err(_e) => String::from("~/"),
+        Ok(val) => PathBuf::from(val),
+        Err(_) => PathBuf::from("~/"),
     };
     let cache_dir = match env::var("XDG_CACHE_HOME") {
-        Ok(val) => format!("{val}/mpris-discord-rpc"),
-        Err(_e) => format!("{home_dir}/.cache/mpris-discord-rpc"),
+        Ok(val) => {
+            let mut tmp_path = PathBuf::from(val);
+            tmp_path.push("mpris-discord-rpc");
+            tmp_path
+        }
+        Err(_) => {
+            let mut tmp_path = PathBuf::from(home_dir);
+            tmp_path.push(".cache");
+            tmp_path.push("mpris-discord-rpc");
+            tmp_path
+        }
     };
+
     if cache_enabled {
-        println!("Cache location: {cache_dir}");
+        println!("[config] Cache location: {}", &cache_dir.display());
     }
+
+    // Cache file
+    let mut db_path = PathBuf::from(&cache_dir);
+    db_path.push("album_cache.db");
+
+    let mut album_cache = match PickleDb::load(
+        &db_path,
+        PickleDbDumpPolicy::AutoDump,
+        SerializationMethod::Json,
+    ) {
+        Ok(db) => {
+            if cache_enabled {
+                println!("[cache] loaded from file: {}", &db_path.display());
+            }
+            db
+        }
+        Err(_) => {
+            if cache_enabled {
+                println!("[cache] generated new cache file: {}", &db_path.display());
+            }
+            PickleDb::new(
+                &db_path,
+                PickleDbDumpPolicy::AutoDump,
+                SerializationMethod::Json,
+            )
+        }
+    };
 
     loop {
         // Connect to MPRIS2
@@ -115,8 +175,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
+        // List available players and exit
+        if list_players {
+            match player.find_all() {
+                Ok(player_list) => {
+                    if player_list.is_empty() {
+                        println!("Could not find any player with MPRIS2 support.");
+                    } else {
+                        println!("────────────────────────────────────────────────────");
+                        println!("List of available music players with MPRIS2 support:");
+                        for music_player in &player_list {
+                            println!(" - {}", music_player.identity());
+                        }
+                        println!("────────────────────────────────────────────────────");
+                        println!("Use the name to choose from which source the script should take data for the discord status.");
+                        println!("Usage instruction:");
+                        println!(r#" ./mpris-discord-rpc -n "{}""#, player_list[0].identity());
+                    }
+                }
+                Err(_) => {
+                    println!("Could not find any player with MPRIS2 support.");
+                }
+            };
+            return Ok(());
+        }
+
+        // Get player by name if enabled
+        let player = if player_name_enabled {
+            player.find_by_name(&player_name)
+        } else {
+            player.find_active()
+        };
+
         // Find acive player
-        let player = match player.find_active() {
+        let player = match player {
             Ok(a) => {
                 if player_notif != 1 {
                     println!("Found active player with MPRIS2 support.");
@@ -124,6 +216,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 a
             }
+            // Err(mpris::FindingError::NoPlayerFound) => {}
             Err(_) => {
                 if player_notif != 2 {
                     println!(
@@ -171,7 +264,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         } else {
             match client.reconnect() {
                 Ok(a) => {
-                    println!("Reconnected to Discord.");
+                    if discord_notif {
+                        println!("Reconnected to Discord.");
+                    }
                     is_interrupted = true;
                     discord_notif = false;
                     a
@@ -241,9 +336,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if album.is_empty() {
                 album = "Unknown Album";
             }
-            let artist = metadata.artists();
-            let artist = artist.unwrap()[0];
+            let artist = metadata.artists().unwrap_or(vec!["Unknown Artist"]);
+            let artist = artist[0];
             let album_id = format!("{} - {}", artist, album);
+
+            // If all metadata values are unknown then break
+            if (artist == "Unknown Artist") & (album == "Unknown Album") & (title == "Unknown Title") {
+                // println!("[debug] Unknown metadata, skipping...");
+                sleep(Duration::from_secs(interval));
+                break;
+            }
 
             let mut metadata_changed: bool = false;
 
@@ -292,13 +394,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     _cover_url = "missing-cover".to_string();
                 } else {
                     // Load from cache if enabled
-                    let mut cache_url: String = "".to_string();
+                    let mut cache_url: String = String::new();
                     if cache_enabled {
-                        let cache_data = match cacache::read_sync(&cache_dir, &album_id) {
-                            Ok(value) => value,
-                            Err(_) => vec![0],
+                        cache_url = if album_cache.exists(&album_id) {
+                            match album_cache.get(&album_id) {
+                                Some(url) => url,
+                                None => String::new(),
+                            }
+                        } else {
+                            String::new()
                         };
-                        cache_url = std::str::from_utf8(&cache_data).unwrap().to_string();
                     }
 
                     if (!cache_url.is_empty()) & (cache_url.len() > 5) {
@@ -316,16 +421,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         url.pop();
                                         url.remove(0);
 
+                                        println!("[last.fm] fetched image link: {url}");
                                         // Save cover url to cache
                                         if cache_enabled {
-                                            match cacache::write_sync(
-                                                &cache_dir,
-                                                &album_id,
-                                                url.to_string(),
-                                            ) {
-                                                Ok(_) => println!("[cache] fetched and saved image url for: {album_id}."),
+                                            match album_cache.set(&album_id, &url) {
+                                                Ok(_) => println!("[cache] saved image url for: {album_id}."),
                                                 // _ => (),
-                                                Err(_) => println!("[cache] error, unable to write to cache."),
+                                                Err(_) => println!("[cache] error, unable to write to cache file."),
                                             }
                                         }
                                     } else {
@@ -337,8 +439,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             },
                             Err(_) => "missing-cover".to_string(),
                         };
-
-                        println!("Fetched image link: {_cover_url}");
                     }
                 }
             }

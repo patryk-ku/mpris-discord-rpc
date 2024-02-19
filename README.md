@@ -38,6 +38,8 @@ Options:
   -p, --profile-button <nickname>  Display "Open user's last.fm profile" button
   -y, --yt-button                  Display "Search this song on YouTube" button
   -d, --disable-cache              Disable cache (not recommended)
+  -l, --list-players               Displays all available player names and exits. Use to get your players name for -n parameter
+  -n, --player-name <Player Name>  Get status only from given player name. Use -l to get player exact name to use with this parameter
   -h, --help                       Print help
   -V, --version                    Print version
 ```
@@ -47,6 +49,21 @@ Options:
 ```
 ./mpris-discord-rpc -i 5 -p lastfmusername -y
 ```
+
+### Player selection
+
+To select only one specific player, use the `--list-players` or `-l` parameter to get your player name:
+
+```
+./mpris-discord-rpc --list-players
+```
+
+Then use `--player-name` or `-n` to get metadata for status only from this player:
+
+```
+./mpris-discord-rpc --player-name "Insert name here"
+```
+
 ## Flatpak Discord fix
 
 As flatpak applications are sandboxed this makes it difficult for any other programs to communicate with them. But this can be easily fixed using the following command:
