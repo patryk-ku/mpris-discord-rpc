@@ -264,7 +264,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         } else {
             match client.reconnect() {
                 Ok(a) => {
-                    println!("Reconnected to Discord.");
+                    if discord_notif {
+                        println!("Reconnected to Discord.");
+                    }
                     is_interrupted = true;
                     discord_notif = false;
                     a
@@ -338,6 +340,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let artist = artist[0];
             let album_id = format!("{} - {}", artist, album);
 
+            // If all metadata values are unknown then break
+            if (artist == "Unknown Artist") & (album == "Unknown Album") & (title == "Unknown Title") {
+                // println!("[debug] Unknown metadata, skipping...");
+                sleep(Duration::from_secs(interval));
+                break;
+            }
+
             let mut metadata_changed: bool = false;
 
             // println!("{title} - {last_title}");
@@ -351,14 +360,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             {
                 metadata_changed = true;
             }
-
-            // TODO: Handle unknown metadata
-            // If all metadata values are unknown then skip
-            // if (artist == "Unknown Artist") & (album == "Unknown Album") & (title == "Unknown Title") {
-            //     println!("Unknown metadata, skipping...");
-            //     sleep(Duration::from_secs(interval));
-            //     break;
-            // }
 
             // Get track position if supported by player else return 0 secs
             let track_position = match player.get_position() {
