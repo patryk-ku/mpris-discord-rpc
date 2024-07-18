@@ -1,13 +1,15 @@
 # mpris-discord-rpc
+
+![repository-image](https://github.com/user-attachments/assets/0bd6b69c-ea58-4a43-855e-1fffb9a7230a)
+
 MPRIS2 Discord music rich presence status **with support for album covers**. In addition, there is also an option to enable buttons with links to your profile on last.fm and a search song on Youtube. Written in Rust so it's really fast and efficient.
 
-![rpc](https://github.com/patryk-ku/mpris-discord-rpc/assets/38609910/808b88cf-243a-4ec1-a5d4-9669f396e9b0)
-
-> **⚠️ Warning:** This is my first ever code written in Rust after a few days of learning so it may have bugs or errors. And I am aware that it can probably be written better but at least it works and I have been using it for some time without any problems.
+> [!WARNING]
+> This is my first ever code written in Rust after a few days of learning so it may have bugs or errors. And I am aware that it can probably be written better but at least it works and I have been using it for long time without any problems.
 
 ## Supported players
 
-Any player or app with [MPRIS2](https://wiki.archlinux.org/title/MPRIS) support. Basically nearly every music application on Linux supports MRPIS2 in some way so there are plenty of compatible players.
+Any player or app with [MPRIS2](https://wiki.archlinux.org/title/MPRIS) support. Basically nearly every music application on Linux supports MRPIS2 in some way so there are plenty of compatible players. Web browsers also support MPRIS2 so this will work even with Spotify playing in Google Chrome or Firefox.
 
 ## Requirements
 
@@ -49,6 +51,9 @@ Options:
 ```
 ./mpris-discord-rpc -i 5 -p lastfmusername -y
 ```
+
+> [!IMPORTANT]
+> After Discord recent profile layout update, users cannot see their activity buttons anymore, BUT other users can see them. This is not a bug but a feature from Discord. You can make sure the buttons work by logging into an alternative account in your browser, or just by asking a friend :)
 
 ### Player selection
 
