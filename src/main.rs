@@ -341,7 +341,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let album_id = format!("{} - {}", artist, album);
 
             // If all metadata values are unknown then break
-            if (artist == "Unknown Artist") & (album == "Unknown Album") & (title == "Unknown Title") {
+            if (artist == "Unknown Artist")
+                & (album == "Unknown Album")
+                & (title == "Unknown Title")
+            {
                 // println!("[debug] Unknown metadata, skipping...");
                 sleep(Duration::from_secs(interval));
                 break;
@@ -407,36 +410,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
 
                     if (!cache_url.is_empty()) & (cache_url.len() > 5) {
-                        // println!("Cached image link: {cache_url}");
                         _cover_url = cache_url.to_string();
                     } else {
                         let request_url = format!("http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={}&artist={}&album={}&autocorrect=0&format=json", LASTFM_API_KEY, url_escape::encode_component(artist), url_escape::encode_component(album));
-                        // println!("{}", request_url);
 
                         _cover_url = match reqwest::blocking::get(request_url) {
-                            Ok(res) => match res.json::<serde_json::Value>() {
-                                Ok(data) => {
-                                    let mut url = data["album"]["image"][3]["#text"].to_string();
-                                    if (!url.is_empty()) & (url.len() > 5) {
-                                        url.pop();
-                                        url.remove(0);
+                            Ok(res) => {
+                                match res.json::<serde_json::Value>() {
+                                    Ok(data) => {
+                                        let mut url =
+                                            data["album"]["image"][3]["#text"].to_string();
+                                        if (!url.is_empty()) & (url.len() > 5) {
+                                            url.pop();
+                                            url.remove(0);
 
-                                        println!("[last.fm] fetched image link: {url}");
-                                        // Save cover url to cache
-                                        if cache_enabled {
-                                            match album_cache.set(&album_id, &url) {
+                                            println!("[last.fm] fetched image link: {url}");
+                                            // Save cover url to cache
+                                            if cache_enabled {
+                                                match album_cache.set(&album_id, &url) {
                                                 Ok(_) => println!("[cache] saved image url for: {album_id}."),
-                                                // _ => (),
                                                 Err(_) => println!("[cache] error, unable to write to cache file."),
                                             }
+                                            }
+                                        } else {
+                                            url = "missing-cover".to_string();
                                         }
-                                    } else {
-                                        url = "missing-cover".to_string();
+                                        url
                                     }
-                                    url
+                                    Err(_) => "missing-cover".to_string(),
                                 }
-                                Err(_) => "missing-cover".to_string(),
-                            },
+                            }
                             Err(_) => "missing-cover".to_string(),
                         };
                     }
@@ -485,12 +488,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .small_image(&status_text)
                         .large_text(&album)
                         .small_text(&status_text),
-                )
-                // .buttons(vec![
-                //     activity::Button::new("Search this song on YouTube", &yt_url),
-                //     activity::Button::new("Open user's last.fm profile", &lastfm_url),
-                // ])
-                ;
+                );
 
             let payload = if is_playing {
                 payload.timestamps(activity::Timestamps::new().start(last_time.try_into().unwrap()))
