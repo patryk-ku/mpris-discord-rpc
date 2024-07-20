@@ -103,3 +103,7 @@ If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-
    cargo build --release
    ```
 6. The compiled executable file location is `target/release/mpris-discord-rpc`.
+
+## Changelog
+
+[CHANGELOG.md](CHANGELOG.md)
