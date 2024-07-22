@@ -53,7 +53,7 @@ struct Cli {
     #[arg(short, long)]
     disable_cache: bool,
 
-    /// Displays all available player names and exits. Use to get your players name for -a argument
+    /// Displays all available music player names and exits. Use to get your player name for -a or -n argument
     #[arg(short, long)]
     list_players: bool,
 
