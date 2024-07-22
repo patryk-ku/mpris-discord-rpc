@@ -13,6 +13,27 @@ use std::path::PathBuf;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 
+fn clear_activity(is_activity_set: &mut bool, client: &mut DiscordIpcClient) {
+    if *is_activity_set {
+        let is_activity_cleared = client.clear_activity().is_ok();
+
+        if is_activity_cleared {
+            *is_activity_set = false;
+            return;
+        }
+
+        let is_reconnected = client.reconnect().is_ok();
+
+        if !is_reconnected {
+            return;
+        }
+
+        if client.clear_activity().is_ok() {
+            *is_activity_set = false;
+        }
+    }
+}
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
@@ -32,13 +53,17 @@ struct Cli {
     #[arg(short, long)]
     disable_cache: bool,
 
-    /// Displays all available player names and exits. Use to get your players name for -n parameter
+    /// Displays all available music player names and exits. Use to get your player name for -a or -n argument
     #[arg(short, long)]
     list_players: bool,
 
-    /// Get status only from given player name. Use -l to get player exact name to use with this parameter
+    /// Get status only from one given player. Check --allowlist-add if you want to use multiple players. Use -l to get player exact name to use with this argument
     #[arg(short = 'n', long, value_name = "Player Name", value_parser = clap::value_parser!(String))]
     player_name: Option<String>,
+
+    /// Add player name to allowlist. Use multiple times to add several players. Cannot be used with --player-name.
+    #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", conflicts_with = "player_name", value_parser = clap::value_parser!(String))]
+    allowlist: Vec<String>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -86,6 +111,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             true
         }
         None => false,
+    };
+
+    // Allowlist of music players
+    let mut allowlist: Vec<String> = Vec::new();
+    let allowlist_enabled: bool = match args.allowlist.len() {
+        0 => false,
+        _ => {
+            allowlist = args.allowlist.clone();
+            println!("[config] Music Players Allowlist: ");
+            for name in &allowlist {
+                println!(" * {} ", name);
+            }
+            true
+        }
     };
 
     // Vars for activity update detection
@@ -182,15 +221,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if player_list.is_empty() {
                         println!("Could not find any player with MPRIS2 support.");
                     } else {
+                        println!("");
                         println!("────────────────────────────────────────────────────");
                         println!("List of available music players with MPRIS2 support:");
                         for music_player in &player_list {
-                            println!(" - {}", music_player.identity());
+                            println!(" * {}", music_player.identity());
                         }
-                        println!("────────────────────────────────────────────────────");
-                        println!("Use the name to choose from which source the script should take data for the discord status.");
-                        println!("Usage instruction:");
-                        println!(r#" ./mpris-discord-rpc -n "{}""#, player_list[0].identity());
+                        println!("");
+                        println!("Use the name to choose from which source the script should take data for the Discord status.");
+                        println!("Usage instructions:");
+                        println!("");
+                        println!(r#" ./mpris-discord-rpc -a "{}""#, player_list[0].identity());
+                        println!("");
+                        println!("You can use the -a argument multiple times to add more than one player to the allowlist:");
+                        println!("");
+                        println!(
+                            r#" ./mpris-discord-rpc -a "{}" -a "Second Player" -a "Any other player""#,
+                            player_list[0].identity()
+                        );
                     }
                 }
                 Err(_) => {
@@ -200,15 +248,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             return Ok(());
         }
 
-        // Get player by name if enabled
-        let player = if player_name_enabled {
-            player.find_by_name(&player_name)
-        } else {
-            player.find_active()
-        };
+        // Find active player (and filter them by name if enabled)
+        let mut player_finder = player.find_active();
 
-        // Find acive player
-        let player = match player {
+        if player_name_enabled {
+            player_finder = player.find_by_name(&player_name);
+        }
+
+        if allowlist_enabled {
+            for allowlist_entry in &allowlist {
+                player_finder = player.find_by_name(&allowlist_entry);
+
+                if player_finder.is_ok() {
+                    break;
+                }
+            }
+        }
+
+        // Connect with player
+        let player = match player_finder {
             Ok(a) => {
                 if player_notif != 1 {
                     println!("Found active player with MPRIS2 support.");
@@ -216,28 +274,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 a
             }
-            // Err(mpris::FindingError::NoPlayerFound) => {}
             Err(_) => {
                 if player_notif != 2 {
-                    println!(
-                        "Could not find any player with MPRIS2 support. Waiting for any player..."
-                    );
+                    if allowlist_enabled {
+                        println!(
+                            "Could not find any active player from your allowlist with MPRIS2 support. Waiting for any player from your allowlist..."
+                        );
+                    } else {
+                        println!(
+                            "Could not find any player with MPRIS2 support. Waiting for any player..."
+                        );
+                    }
+
                     player_notif = 2;
                     discord_notif = false;
                 }
+
                 is_interrupted = true;
-
-                if is_activity_set {
-                    match client.reconnect() {
-                        Ok(res) => {
-                            client.clear_activity()?;
-                            is_activity_set = false;
-                            res
-                        }
-                        Err(_) => (),
-                    };
-                }
-
+                clear_activity(&mut is_activity_set, &mut client);
                 sleep(Duration::from_secs(interval));
                 continue;
             }
@@ -288,17 +342,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(a) => a,
                 Err(_) => {
                     println!("Could not get metadata from player");
-
-                    if is_activity_set {
-                        match client.reconnect() {
-                            Ok(res) => {
-                                client.clear_activity()?;
-                                is_activity_set = false;
-                                res
-                            }
-                            Err(_) => (),
-                        };
-                    }
+                    clear_activity(&mut is_activity_set, &mut client);
                     break;
                 }
             };
@@ -308,17 +352,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(status) => status,
                 Err(_) => {
                     println!("Could not get playback status from player");
-
-                    if is_activity_set {
-                        match client.reconnect() {
-                            Ok(res) => {
-                                client.clear_activity()?;
-                                is_activity_set = false;
-                                res
-                            }
-                            Err(_) => (),
-                        };
-                    }
+                    clear_activity(&mut is_activity_set, &mut client);
                     break;
                 }
             };
@@ -341,7 +375,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let album_id = format!("{} - {}", artist, album);
 
             // If all metadata values are unknown then break
-            if (artist == "Unknown Artist") & (album == "Unknown Album") & (title == "Unknown Title") {
+            if (artist == "Unknown Artist")
+                & (album == "Unknown Album")
+                & (title == "Unknown Title")
+            {
                 // println!("[debug] Unknown metadata, skipping...");
                 sleep(Duration::from_secs(interval));
                 break;
@@ -407,36 +444,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
 
                     if (!cache_url.is_empty()) & (cache_url.len() > 5) {
-                        // println!("Cached image link: {cache_url}");
                         _cover_url = cache_url.to_string();
                     } else {
                         let request_url = format!("http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={}&artist={}&album={}&autocorrect=0&format=json", LASTFM_API_KEY, url_escape::encode_component(artist), url_escape::encode_component(album));
-                        // println!("{}", request_url);
 
                         _cover_url = match reqwest::blocking::get(request_url) {
-                            Ok(res) => match res.json::<serde_json::Value>() {
-                                Ok(data) => {
-                                    let mut url = data["album"]["image"][3]["#text"].to_string();
-                                    if (!url.is_empty()) & (url.len() > 5) {
-                                        url.pop();
-                                        url.remove(0);
+                            Ok(res) => {
+                                match res.json::<serde_json::Value>() {
+                                    Ok(data) => {
+                                        let mut url =
+                                            data["album"]["image"][3]["#text"].to_string();
+                                        if (!url.is_empty()) & (url.len() > 5) {
+                                            url.pop();
+                                            url.remove(0);
 
-                                        println!("[last.fm] fetched image link: {url}");
-                                        // Save cover url to cache
-                                        if cache_enabled {
-                                            match album_cache.set(&album_id, &url) {
+                                            println!("[last.fm] fetched image link: {url}");
+                                            // Save cover url to cache
+                                            if cache_enabled {
+                                                match album_cache.set(&album_id, &url) {
                                                 Ok(_) => println!("[cache] saved image url for: {album_id}."),
-                                                // _ => (),
                                                 Err(_) => println!("[cache] error, unable to write to cache file."),
                                             }
+                                            }
+                                        } else {
+                                            url = "missing-cover".to_string();
                                         }
-                                    } else {
-                                        url = "missing-cover".to_string();
+                                        url
                                     }
-                                    url
+                                    Err(_) => "missing-cover".to_string(),
                                 }
-                                Err(_) => "missing-cover".to_string(),
-                            },
+                            }
                             Err(_) => "missing-cover".to_string(),
                         };
                     }
@@ -485,12 +522,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .small_image(&status_text)
                         .large_text(&album)
                         .small_text(&status_text),
-                )
-                // .buttons(vec![
-                //     activity::Button::new("Search this song on YouTube", &yt_url),
-                //     activity::Button::new("Open user's last.fm profile", &lastfm_url),
-                // ])
-                ;
+                );
 
             let payload = if is_playing {
                 payload.timestamps(activity::Timestamps::new().start(last_time.try_into().unwrap()))

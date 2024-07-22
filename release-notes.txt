@@ -1,0 +1,1 @@
+- Allowlist of music players (`-a` or `--allowlist-add`).

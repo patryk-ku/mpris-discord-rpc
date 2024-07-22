@@ -1,10 +1,10 @@
 [package]
 name = "mpris-discord-rpc"
-version = "0.1.1"
+version = "0.1.4"
 edition = "2021"
 
 [dependencies]
-discord-rich-presence = "0.2.3"
+discord-rich-presence = "0.2.4"
 mpris = "2.0.1"
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 url-escape = "0.1.1"
