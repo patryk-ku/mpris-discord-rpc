@@ -36,14 +36,15 @@ You can change the default settings using arguments. Launch executable with `-h`
 Usage: mpris-discord-rpc [OPTIONS]
 
 Options:
-  -i, --interval <seconds>         Activity refresh rate (min 5) [default: 10]
-  -p, --profile-button <nickname>  Display "Open user's last.fm profile" button
-  -y, --yt-button                  Display "Search this song on YouTube" button
-  -d, --disable-cache              Disable cache (not recommended)
-  -l, --list-players               Displays all available player names and exits. Use to get your players name for -n parameter
-  -n, --player-name <Player Name>  Get status only from given player name. Use -l to get player exact name to use with this parameter
-  -h, --help                       Print help
-  -V, --version                    Print version
+  -i, --interval <seconds>           Activity refresh rate (min 5) [default: 10]
+  -p, --profile-button <nickname>    Display "Open user's last.fm profile" button
+  -y, --yt-button                    Display "Search this song on YouTube" button
+  -d, --disable-cache                Disable cache (not recommended)
+  -l, --list-players                 Displays all available music player names and exits. Use to get your player name for -a or -n argument
+  -n, --player-name <Player Name>    Get status only from one given player. Check --allowlist-add if you want to use multiple players. Use -l to get player exact name to use with this argument
+  -a, --allowlist-add <Player Name>  Add player name to allowlist. Use multiple times to add several players. Cannot be used with --player-name
+  -h, --help                         Print help
+  -V, --version                      Print version
 ```
 
 **For the best experience, I recommend using app this way:**
@@ -57,7 +58,7 @@ Options:
 
 ### Player selection
 
-To select only one specific player, use the `--list-players` or `-l` parameter to get your player name:
+To select only one specific player, use the `--list-players` or `-l` argument to get your player name:
 
 ```
 ./mpris-discord-rpc --list-players
@@ -65,8 +66,16 @@ To select only one specific player, use the `--list-players` or `-l` parameter t
 
 Then use `--player-name` or `-n` to get metadata for status only from this player:
 
-```
+```sh
 ./mpris-discord-rpc --player-name "Insert name here"
+```
+
+### Allowlist
+
+To select more than one music player, use the `-a` or `--allowlist-add` argument. This argument can be used multiple times to add more players. The order matters and the first is the most important.
+
+```sh
+./mpris-discord-rpc -a "VLC Media Player" -a "Chrome" -a "Any other player"
 ```
 
 ## Flatpak Discord fix
@@ -76,6 +85,7 @@ As flatpak applications are sandboxed this makes it difficult for any other prog
 ```sh
 ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0
 ```
+
 **Unfortunately but it will need to be used every reboot**. So I would also recommend adding this command to the autostart.
 
 ## System usage
@@ -87,6 +97,7 @@ Normaly it uses around **11.8 MiB** of RAM but even less than **6.5 MiB** when f
 If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-rpc/` or `$HOME/.cache/mpris-discord-rpc/`. Don't worry, the app does not cache image files, but only the url to the image file on the last.fm server, so the cache will not take up much space.
 
 ## Compile from source
+
 1. Install Rust and Cargo using instructions from [Rust site](https://www.rust-lang.org/).
 2. Clone the repository
    ```sh
@@ -98,11 +109,11 @@ If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-
    mv .env.example .env
    echo LASTFM_API_KEY=insert-key-here > .env
    ```
-5. Compile executable using Cargo
+4. Compile executable using Cargo
    ```sh
    cargo build --release
    ```
-6. The compiled executable file location is `target/release/mpris-discord-rpc`.
+5. The compiled executable file location is `target/release/mpris-discord-rpc`.
 
 ## Changelog
 
