@@ -728,7 +728,7 @@ dependencies = [
 
 [[package]]
 name = "mpris-discord-rpc"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "clap",
  "discord-rich-presence",
