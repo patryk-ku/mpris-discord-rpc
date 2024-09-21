@@ -29,6 +29,9 @@ For the basic default usage just run executable in terminal:
 ./mpris-discord-rpc
 ```
 
+> [!TIP]
+> Friendly reminder to make the file executable if it doesn't work: `chmod +x mpris-discord-rpc`.
+
 You can change the default settings using arguments. Launch executable with `-h` or `--help` for aditional info:
 
 ```
