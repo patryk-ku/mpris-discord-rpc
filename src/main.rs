@@ -8,6 +8,7 @@ use serde_json;
 use url_escape;
 
 use std::env;
+use std::fs;
 use std::ops::Sub;
 use std::path::PathBuf;
 use std::thread::sleep;
@@ -168,6 +169,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if cache_enabled {
         println!("[config] Cache location: {}", &cache_dir.display());
+        match fs::create_dir_all(&cache_dir) {
+            Ok(a) => a,
+            Err(_) => println!("[cache] Could not create cache directory."),
+        }
     }
 
     // Cache file
@@ -417,8 +422,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 Err(_) => Duration::new(0, 0).as_secs(),
             };
-            println!("=== track duration === : {track_duration}");
-            println!("track position: {track_position}");
 
             // Check if song repeated
             if track_position < last_track_position {
