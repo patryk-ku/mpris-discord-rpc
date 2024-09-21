@@ -1,6 +1,6 @@
 # mpris-discord-rpc
 
-![img-optimized](https://github.com/user-attachments/assets/5bafd22b-d3e8-431a-bf73-9fe1b65c59b5)
+![img-min-optimized](https://github.com/user-attachments/assets/15990d23-51af-4d98-ae7d-7feabe84c351)
 
 MPRIS2 Discord music rich presence status **with support for album covers and progress bar**. In addition, there is also an option to enable buttons with links to your profile on last.fm and a search song on Youtube. Written in Rust so it's really fast and efficient.
 
