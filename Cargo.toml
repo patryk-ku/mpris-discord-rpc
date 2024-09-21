@@ -4,7 +4,7 @@ version = "0.1.4"
 edition = "2021"
 
 [dependencies]
-discord-rich-presence = "0.2.4"
+discord-rich-presence = { git = "https://github.com/vionya/discord-rich-presence.git", version = "0.2.4" }
 mpris = "2.0.1"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 url-escape = "0.1.1"

@@ -384,6 +384,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 break;
             }
 
+            // If artist or track is empty then break
+            if (artist.len() == 0) | (title.len() == 0) {
+                // println!("[debug] Unknown metadata, skipping...");
+                sleep(Duration::from_secs(interval));
+                break;
+            }
+
             let mut metadata_changed: bool = false;
 
             // println!("{title} - {last_title}");
@@ -398,15 +405,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 metadata_changed = true;
             }
 
+            // Get track duration if supported by player else return 0
+            let track_duration = metadata.length().unwrap_or(Duration::new(0, 0)).as_secs();
+
             // Get track position if supported by player else return 0 secs
+            let mut is_track_position: bool = false;
             let track_position = match player.get_position() {
-                Ok(position) => position,
-                Err(_) => Duration::new(0, 0),
+                Ok(position) => {
+                    is_track_position = true;
+                    position.as_secs()
+                }
+                Err(_) => Duration::new(0, 0).as_secs(),
             };
-            // println!("Track position: {:#?}", track_position);
+            println!("=== track duration === : {track_duration}");
+            println!("track position: {track_position}");
 
             // Check if song repeated
-            if track_position.as_secs() < last_track_position {
+            if track_position < last_track_position {
                 metadata_changed = true;
             }
 
@@ -417,11 +432,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             // Get unix time of track start if supported, else return time now
-            let last_time: u64 = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-                Ok(n) => n.sub(track_position).as_secs(),
+            let time_start: u64 = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+                Ok(n) => n.as_secs().sub(track_position),
                 Err(_) => 0,
             };
-            let track_position = track_position.as_secs();
 
             // Fetch cover from last.fm
             if !album_id.eq(&last_album_id) {
@@ -522,12 +536,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .small_image(&status_text)
                         .large_text(&album)
                         .small_text(&status_text),
-                );
+                )
+                .activity_type(activity::ActivityType::Listening);
 
-            let payload = if is_playing {
-                payload.timestamps(activity::Timestamps::new().start(last_time.try_into().unwrap()))
+            let payload = if is_track_position & (track_duration > 0) {
+                let time_end = time_start + track_duration;
+                if is_playing {
+                    payload.timestamps(
+                        activity::Timestamps::new()
+                            .start(time_start.try_into().unwrap())
+                            .end(time_end.try_into().unwrap()),
+                    )
+                } else {
+                    payload.timestamps(
+                        activity::Timestamps::new().start(time_start.try_into().unwrap()),
+                    )
+                }
             } else {
-                payload.timestamps(activity::Timestamps::new().end(last_time.try_into().unwrap()))
+                payload.timestamps(activity::Timestamps::new().end(time_start.try_into().unwrap()))
             };
 
             let mut buttons = Vec::new();

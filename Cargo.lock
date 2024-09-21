@@ -254,12 +254,12 @@ dependencies = [
 [[package]]
 name = "discord-rich-presence"
 version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f632a41e3e97febf8edff46b1405f9875894c29e20a25c5abe566872226b3f84"
+source = "git+https://github.com/vionya/discord-rich-presence.git#b58fc8ce53548d27684c8cfb4d0110f47206ef5f"
 dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
+ "serde_repr",
  "uuid",
 ]
 
@@ -1080,6 +1080,17 @@ dependencies = [
  "memchr",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "serde_repr"
+version = "0.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c64451ba24fc7a6a2d60fc75dd9c83c90903b19028d4eff35e88fc1e86564e9"
+dependencies = [
+ "proc-macro2",
+ "quote 1.0.37",
+ "syn 2.0.77",
 ]
 
 [[package]]
