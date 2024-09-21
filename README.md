@@ -1,8 +1,8 @@
 # mpris-discord-rpc
 
-![repository-image](https://github.com/user-attachments/assets/0bd6b69c-ea58-4a43-855e-1fffb9a7230a)
+![img-min-optimized](https://github.com/user-attachments/assets/15990d23-51af-4d98-ae7d-7feabe84c351)
 
-MPRIS2 Discord music rich presence status **with support for album covers**. In addition, there is also an option to enable buttons with links to your profile on last.fm and a search song on Youtube. Written in Rust so it's really fast and efficient.
+MPRIS2 Discord music rich presence status **with support for album covers and progress bar**. In addition, there is also an option to enable buttons with links to your profile on last.fm and a search song on Youtube. Written in Rust so it's really fast and efficient.
 
 > [!WARNING]
 > This is my first ever code written in Rust after a few days of learning so it may have bugs or errors. And I am aware that it can probably be written better but at least it works and I have been using it for long time without any problems.
@@ -50,13 +50,15 @@ Options:
 **For the best experience, I recommend using app this way:**
 
 ```
-./mpris-discord-rpc -i 5 -p lastfmusername -y
+./mpris-discord-rpc -i 5 -p lastfmusername -y -a 'Player Name 1' -a 'Player Name 2 etc...'
 ```
 
 > [!IMPORTANT]
 > After Discord recent profile layout update, users cannot see their activity buttons anymore, BUT other users can see them. This is not a bug but a feature from Discord. You can make sure the buttons work by logging into an alternative account in your browser, or just by asking a friend :)
 
 ### Player selection
+
+> It is recommended to use [Allowlist](#allowlist) instead. I left this argument only for compatibility between versions. 
 
 To select only one specific player, use the `--list-players` or `-l` argument to get your player name:
 
