@@ -14,26 +14,7 @@ use std::path::PathBuf;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 
-fn clear_activity(is_activity_set: &mut bool, client: &mut DiscordIpcClient) {
-    if *is_activity_set {
-        let is_activity_cleared = client.clear_activity().is_ok();
-
-        if is_activity_cleared {
-            *is_activity_set = false;
-            return;
-        }
-
-        let is_reconnected = client.reconnect().is_ok();
-
-        if !is_reconnected {
-            return;
-        }
-
-        if client.clear_activity().is_ok() {
-            *is_activity_set = false;
-        }
-    }
-}
+mod utils;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -65,15 +46,39 @@ struct Cli {
     /// Add player name to allowlist. Use multiple times to add several players. Cannot be used with --player-name.
     #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", conflicts_with = "player_name", value_parser = clap::value_parser!(String))]
     allowlist: Vec<String>,
+
+    /// Enable debug log
+    #[arg(short = 'b', long)]
+    debug_log: bool,
+
+    /// Reset config file (overwrites the old file if exists)
+    #[arg(short, long)]
+    reset_config: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
 
+    // Set home path, If $HOME is not set, do not write or read anything from the user's disk
+    let (home_exists, home_dir) = match env::var("HOME") {
+        Ok(val) => (true, PathBuf::from(val)),
+        Err(_) => (false, PathBuf::from("/")),
+    };
+    debug_log!(args.debug_log, "home_exists: {}", home_exists);
+    debug_log!(args.debug_log, "home_dir: {}", home_dir.display());
+
+    // Set config file path and reset if argument enabled by user
+    let config_file = utils::create_config_file(&home_dir, args.reset_config);
+    if args.reset_config {
+        return Ok(());
+    }
+    debug_log!(args.debug_log, "Config file: {}", config_file.display());
+
     // Load api key from .env file durning compilation
     const LASTFM_API_KEY: &str = dotenv!("LASTFM_API_KEY");
 
     // User settings parsed from args:
+    debug_log!(args.debug_log, "Debug logs: enabled.");
     // Refresh rate (sleep after every loop)
     let interval: u64 = args.interval; // important: min 5 sec
     println!("[config] Refresh rate: {} seconds", interval);
@@ -149,10 +154,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = DiscordIpcClient::new("1129859263741837373")?;
 
     // Set cache path
-    let home_dir = match env::var("HOME") {
-        Ok(val) => PathBuf::from(val),
-        Err(_) => PathBuf::from("~/"),
-    };
     let cache_dir = match env::var("XDG_CACHE_HOME") {
         Ok(val) => {
             let mut tmp_path = PathBuf::from(val);
@@ -296,7 +297,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 is_interrupted = true;
-                clear_activity(&mut is_activity_set, &mut client);
+                utils::clear_activity(&mut is_activity_set, &mut client);
                 sleep(Duration::from_secs(interval));
                 continue;
             }
@@ -347,7 +348,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(a) => a,
                 Err(_) => {
                     println!("Could not get metadata from player");
-                    clear_activity(&mut is_activity_set, &mut client);
+                    utils::clear_activity(&mut is_activity_set, &mut client);
                     break;
                 }
             };
@@ -357,7 +358,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(status) => status,
                 Err(_) => {
                     println!("Could not get playback status from player");
-                    clear_activity(&mut is_activity_set, &mut client);
+                    utils::clear_activity(&mut is_activity_set, &mut client);
                     break;
                 }
             };
