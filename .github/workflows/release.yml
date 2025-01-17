@@ -34,6 +34,12 @@ jobs:
         run: |
           cargo build --release
 
+      - name: Create .deb package
+        run: |
+          cargo install cargo-deb
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y dpkg dpkg-dev liblzma-dev
+          cargo deb --output target/release/mpris-discord-rpc.deb
+
       - name: Create .rpm package
         run: |
           cargo install cargo-generate-rpm
@@ -46,4 +52,5 @@ jobs:
           body_path: .github/release-notes.md
           files: |
             target/release/mpris-discord-rpc
+            target/release/mpris-discord-rpc.deb
             target/release/mpris-discord-rpc.rpm
