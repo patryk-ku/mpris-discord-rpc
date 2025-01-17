@@ -30,18 +30,13 @@ pub struct Cli {
     #[arg(short, long)]
     pub disable_cache: bool,
 
-    /// Displays all available music player names and exits. Use to get your player name for -a or -n argument
+    /// Displays all available music player names and exits. Use to get your player name for -a argument
     #[arg(short, long)]
     #[serde(skip_deserializing)]
     pub list_players: bool,
 
-    /// Get status only from one given player. Check --allowlist-add if you want to use multiple players. Use -l to get player exact name to use with this argument
-    #[arg(short = 'n', long, value_name = "Player Name", value_parser = clap::value_parser!(String))]
-    #[serde(skip_deserializing)]
-    pub player_name: Option<String>,
-
-    /// Add player name to allowlist. Use multiple times to add several players. Cannot be used with --player-name.
-    #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", conflicts_with = "player_name", value_parser = clap::value_parser!(String))]
+    /// Get status only from given player. Use multiple times to add several players.
+    #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", value_parser = clap::value_parser!(String))]
     pub allowlist: Vec<String>,
 
     /// Enable debug log
@@ -195,10 +190,6 @@ pub fn load_settings() -> Cli {
 
     if args.list_players {
         config.list_players = args.list_players;
-    }
-
-    if args.player_name != config.player_name {
-        config.player_name = args.player_name;
     }
 
     if args.allowlist != config.allowlist && args.allowlist.len() > 0 {

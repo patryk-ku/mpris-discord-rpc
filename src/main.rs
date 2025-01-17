@@ -44,18 +44,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Enable/disable use of cache
-    let cache_enabled: bool = !settings.disable_cache;
-
-    // Get status only from player with given name
-    let mut player_name: String = String::new();
-    let player_name_enabled: bool = match settings.player_name {
-        Some(name) => {
-            player_name = name;
-            // println!("[config] Player name: {}", player_name);
-            true
-        }
-        None => false,
-    };
+    let mut cache_enabled: bool = !settings.disable_cache;
+    if !home_exists {
+        cache_enabled = false;
+    }
 
     // Allowlist of music players
     let allowlist_enabled: bool = match settings.allowlist.len() {
@@ -138,7 +130,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     loop {
-        // Connect to MPRIS2
+        // Connect to MPRIS
         let player = match PlayerFinder::new() {
             Ok(a) => {
                 dbus_notif = false;
@@ -159,11 +151,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             match player.find_all() {
                 Ok(player_list) => {
                     if player_list.is_empty() {
-                        println!("Could not find any player with MPRIS2 support.");
+                        println!("Could not find any player with MPRIS support.");
                     } else {
                         println!("");
                         println!("────────────────────────────────────────────────────");
-                        println!("List of available music players with MPRIS2 support:");
+                        println!("List of available music players with MPRIS support:");
                         for music_player in &player_list {
                             println!(" * {}", music_player.identity());
                         }
@@ -171,45 +163,43 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("Use the name to choose from which source the script should take data for the Discord status.");
                         println!("Usage instructions:");
                         println!("");
-                        println!(r#" ./mpris-discord-rpc -a "{}""#, player_list[0].identity());
+                        println!(r#" mpris-discord-rpc -a "{}""#, player_list[0].identity());
                         println!("");
                         println!("You can use the -a argument multiple times to add more than one player to the allowlist:");
                         println!("");
                         println!(
-                            r#" ./mpris-discord-rpc -a "{}" -a "Second Player" -a "Any other player""#,
+                            r#" mpris-discord-rpc -a "{}" -a "Second Player" -a "Any other player""#,
                             player_list[0].identity()
                         );
                     }
                 }
                 Err(_) => {
-                    println!("Could not find any player with MPRIS2 support.");
+                    println!("Could not find any player with MPRIS support.");
                 }
             };
             return Ok(());
         }
 
         // Find active player (and filter them by name if enabled)
-        let mut player_finder = player.find_active();
-
-        if player_name_enabled {
-            player_finder = player.find_by_name(&player_name);
-        }
-
-        if allowlist_enabled {
+        let player_finder = if allowlist_enabled {
+            let mut allowlist_finder = Err(mpris::FindingError::NoPlayerFound);
             for allowlist_entry in &settings.allowlist {
-                player_finder = player.find_by_name(&allowlist_entry);
+                allowlist_finder = player.find_by_name(&allowlist_entry);
 
-                if player_finder.is_ok() {
+                if allowlist_finder.is_ok() {
                     break;
                 }
             }
-        }
+            allowlist_finder
+        } else {
+            player.find_active()
+        };
 
         // Connect with player
         let player = match player_finder {
             Ok(a) => {
                 if player_notif != 1 {
-                    println!("Found active player with MPRIS2 support.");
+                    println!("Found active player with MPRIS support.");
                     player_notif = 1;
                 }
                 a
@@ -218,11 +208,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if player_notif != 2 {
                     if allowlist_enabled {
                         println!(
-                            "Could not find any active player from your allowlist with MPRIS2 support. Waiting for any player from your allowlist..."
+                            "Could not find any active player from your allowlist with MPRIS support. Waiting for any player from your allowlist..."
                         );
                     } else {
                         println!(
-                            "Could not find any player with MPRIS2 support. Waiting for any player..."
+                            "Could not find any player with MPRIS support. Waiting for any player..."
                         );
                     }
 
