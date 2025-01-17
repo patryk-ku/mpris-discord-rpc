@@ -33,6 +33,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     debug_log!(settings.debug_log, "home_dir: {}", home_dir.display());
 
     // User settings
+    // Main loop interval
+    let mut interval = settings.interval.unwrap_or(10);
+    if interval < 5 {
+        interval = 5
+    }
+
+    debug_log!(settings.debug_log, "interval: {}", interval);
     // Display "Open user's last.fm profile" button under activity
     let mut lastfm_nickname: String = String::new();
     let show_lastfm_link = match settings.profile_button {
@@ -141,7 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("Could not connect to D-Bus.");
                     dbus_notif = true;
                 }
-                sleep(Duration::from_secs(settings.interval));
+                sleep(Duration::from_secs(interval));
                 continue;
             }
         };
@@ -222,7 +229,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 is_interrupted = true;
                 utils::clear_activity(&mut is_activity_set, &mut client);
-                sleep(Duration::from_secs(settings.interval));
+                sleep(Duration::from_secs(interval));
                 continue;
             }
         };
@@ -240,7 +247,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("Could not connect to Discord. Waiting for discord to start...");
                         discord_notif = true;
                     }
-                    sleep(Duration::from_secs(settings.interval));
+                    sleep(Duration::from_secs(interval));
                     continue;
                 }
             };
@@ -260,7 +267,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("Could not reconnect to Discord. Waiting for discord to start...");
                         discord_notif = true;
                     }
-                    sleep(Duration::from_secs(settings.interval));
+                    sleep(Duration::from_secs(interval));
                     continue;
                 }
             };
@@ -310,14 +317,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 & (title == "Unknown Title")
             {
                 // println!("[debug] Unknown metadata, skipping...");
-                sleep(Duration::from_secs(settings.interval));
+                sleep(Duration::from_secs(interval));
                 break;
             }
 
             // If artist or track is empty then break
             if (artist.len() == 0) | (title.len() == 0) {
                 // println!("[debug] Unknown metadata, skipping...");
-                sleep(Duration::from_secs(settings.interval));
+                sleep(Duration::from_secs(interval));
                 break;
             }
 
@@ -355,7 +362,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             if !metadata_changed & !is_interrupted {
                 // println!("[debug] same metadata and status, skipping...");
-                sleep(Duration::from_secs(settings.interval));
+                sleep(Duration::from_secs(interval));
                 continue;
             }
 
@@ -519,9 +526,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             };
 
-            sleep(Duration::from_secs(settings.interval));
+            sleep(Duration::from_secs(interval));
         }
 
-        sleep(Duration::from_secs(settings.interval));
+        sleep(Duration::from_secs(interval));
     }
 }

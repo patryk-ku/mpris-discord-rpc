@@ -13,10 +13,9 @@ use crate::debug_log;
 #[derive(Parser, ClapSerde, Serialize, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    /// Activity refresh rate (min 5)
-    #[arg(short, long, value_name = "seconds", default_value= "99999", value_parser = clap::value_parser!(u64).range(5..))]
-    #[default(99999)]
-    pub interval: u64,
+    /// Activity refresh rate (min 5, default 10)
+    #[arg(short, long, value_name = "seconds", value_parser = clap::value_parser!(u64).range(5..))]
+    pub interval: Option<u64>,
 
     /// Display "Open user's last.fm profile" button
     #[arg(short, long, value_name = "nickname", value_parser = clap::value_parser!(String))]
@@ -117,7 +116,7 @@ pub fn load_settings() -> Cli {
         Err(_) => (false, PathBuf::from("/")),
     };
 
-    let mut args = Cli::parse();
+    let args = Cli::parse();
     debug_log!(args.debug_log, "Debug logs: enabled.");
     debug_log!(args.debug_log, "args: {:#?}", args);
 
@@ -128,17 +127,11 @@ pub fn load_settings() -> Cli {
     }
 
     if !home_exists {
-        if args.interval == 99999 {
-            args.interval = 10;
-        }
         return args;
     }
 
     let (mut config_exists, config_file) = create_config_file(&home_dir, false);
     if !config_exists {
-        if args.interval == 99999 {
-            args.interval = 10;
-        }
         return args;
     }
 
@@ -160,20 +153,14 @@ pub fn load_settings() -> Cli {
     };
 
     if !config_exists {
-        if args.interval == 99999 {
-            args.interval = 10;
-        }
         return args;
     }
     println!("Configuration loaded from file: {}", config_file.display());
     debug_log!(args.debug_log, "config: {:#?}", config);
 
     // Logic of merging config with args
-    if args.interval != config.interval && args.interval != 99999 {
+    if args.interval != config.interval && args.interval.is_some() {
         config.interval = args.interval;
-    }
-    if config.interval == 99999 {
-        config.interval = 10;
     }
 
     if args.profile_button != config.profile_button && args.profile_button.is_some() {

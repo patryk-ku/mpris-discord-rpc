@@ -39,7 +39,7 @@ mpris-discord-rpc --help
 Usage: mpris-discord-rpc [OPTIONS]
 
 Options:
-  -i, --interval <seconds>           Activity refresh rate (min 5) [default: 99999]
+  -i, --interval <seconds>           Activity refresh rate (min 5, default 10)
   -p, --profile-button <nickname>    Display "Open user's last.fm profile" button
   -y, --yt-button                    Display "Search this song on YouTube" button
   -d, --disable-cache                Disable cache (not recommended)
