@@ -2,6 +2,10 @@
 name = "mpris-discord-rpc"
 version = "0.1.6"
 edition = "2021"
+authors = ["Patryk Kurdziel <patryk.kurdziel@protonmail.com>"]
+description = "MPRIS Discord music rich presence status with support for album covers  and progress bar."
+repository = "https://github.com/patryk-ku/mpris-discord-rpc"
+license = "MIT"
 
 [dependencies]
 discord-rich-presence = "0.2.5"
@@ -21,3 +25,8 @@ strip = true
 # optimizations for file size:
 codegen-units = 1
 panic = "abort"
+
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/mpris-discord-rpc", dest = "/usr/bin/mpris-discord-rpc", mode = "755" },
+]
