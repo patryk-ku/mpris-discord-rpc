@@ -1,5 +1,5 @@
 use clap_serde_derive::{
-    clap::{self, Parser},
+    clap::{self, Parser, Subcommand},
     serde::Serialize,
     ClapSerde,
 };
@@ -46,6 +46,27 @@ pub struct Cli {
     #[arg(long)]
     #[serde(skip_deserializing)]
     pub reset_config: bool,
+
+    /// Recursive fields
+    #[serde(skip_deserializing)]
+    #[command(flatten)]
+    pub suboptions: SubConfig,
+}
+
+#[derive(Debug, Parser, Default, Serialize)]
+pub struct SubConfig {
+    #[command(subcommand)]
+    pub command: Option<Commands>,
+}
+
+#[derive(Subcommand, Debug, Serialize)]
+pub enum Commands {
+    /// Start RPC in the background and enable autostart
+    Enable {},
+    /// Stop RPC and disable autostart
+    Disable {},
+    /// Use to restart the service to reload the changed configuration file.
+    Restart {},
 }
 
 // Use to get config path, create new config or reset existing
@@ -190,6 +211,8 @@ pub fn load_settings() -> Cli {
     if args.reset_config {
         config.reset_config = args.reset_config;
     }
+
+    config.suboptions = args.suboptions;
 
     return config;
 }

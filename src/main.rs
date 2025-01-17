@@ -32,6 +32,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     debug_log!(settings.debug_log, "home_exists: {}", home_exists);
     debug_log!(settings.debug_log, "home_dir: {}", home_dir.display());
 
+    // Exec subcommands
+    match settings.suboptions.command {
+        Some(settings::Commands::Enable {}) => utils::enable_service(&home_dir),
+        Some(settings::Commands::Disable {}) => utils::disable_service(),
+        Some(settings::Commands::Restart {}) => utils::restart_service(),
+        None => {}
+    }
+
     // User settings
     // Main loop interval
     let mut interval = settings.interval.unwrap_or(10);
