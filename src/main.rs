@@ -1,4 +1,3 @@
-use clap::Parser;
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use dotenvy_macro::dotenv;
 use mpris::PlayerFinder;
@@ -14,123 +13,54 @@ use std::path::PathBuf;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 
+mod settings;
 mod utils;
 
-#[derive(Parser)]
-#[command(author, version, about, long_about = None)]
-struct Cli {
-    /// Activity refresh rate (min 5)
-    #[arg(short, long, value_name = "seconds", default_value_t = 10, value_parser = clap::value_parser!(u64).range(5..))]
-    interval: u64,
-
-    /// Display "Open user's last.fm profile" button
-    #[arg(short, long, value_name = "nickname", value_parser = clap::value_parser!(String))]
-    profile_button: Option<String>,
-
-    /// Display "Search this song on YouTube" button
-    #[arg(short, long)]
-    yt_button: bool,
-
-    /// Disable cache (not recommended)
-    #[arg(short, long)]
-    disable_cache: bool,
-
-    /// Displays all available music player names and exits. Use to get your player name for -a or -n argument
-    #[arg(short, long)]
-    list_players: bool,
-
-    /// Get status only from one given player. Check --allowlist-add if you want to use multiple players. Use -l to get player exact name to use with this argument
-    #[arg(short = 'n', long, value_name = "Player Name", value_parser = clap::value_parser!(String))]
-    player_name: Option<String>,
-
-    /// Add player name to allowlist. Use multiple times to add several players. Cannot be used with --player-name.
-    #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", conflicts_with = "player_name", value_parser = clap::value_parser!(String))]
-    allowlist: Vec<String>,
-
-    /// Enable debug log
-    #[arg(short = 'b', long)]
-    debug_log: bool,
-
-    /// Reset config file (overwrites the old file if exists)
-    #[arg(short, long)]
-    reset_config: bool,
-}
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Cli::parse();
+    // Load api key from .env file durning compilation
+    const LASTFM_API_KEY: &str = dotenv!("LASTFM_API_KEY");
 
     // Set home path, If $HOME is not set, do not write or read anything from the user's disk
     let (home_exists, home_dir) = match env::var("HOME") {
         Ok(val) => (true, PathBuf::from(val)),
         Err(_) => (false, PathBuf::from("/")),
     };
-    debug_log!(args.debug_log, "home_exists: {}", home_exists);
-    debug_log!(args.debug_log, "home_dir: {}", home_dir.display());
 
-    // Set config file path and reset if argument enabled by user
-    let config_file = utils::create_config_file(&home_dir, args.reset_config);
-    if args.reset_config {
-        return Ok(());
-    }
-    debug_log!(args.debug_log, "Config file: {}", config_file.display());
+    let settings = settings::load_settings();
 
-    // Load api key from .env file durning compilation
-    const LASTFM_API_KEY: &str = dotenv!("LASTFM_API_KEY");
+    debug_log!(settings.debug_log, "Settings: {:#?}", settings);
+    debug_log!(settings.debug_log, "home_exists: {}", home_exists);
+    debug_log!(settings.debug_log, "home_dir: {}", home_dir.display());
 
-    // User settings parsed from args:
-    debug_log!(args.debug_log, "Debug logs: enabled.");
-    // Refresh rate (sleep after every loop)
-    let interval: u64 = args.interval; // important: min 5 sec
-    println!("[config] Refresh rate: {} seconds", interval);
-
-    // Display "Search this song on YouTube" button under activity
-    let show_yt_link: bool = args.yt_button;
-    println!("[config] YT button: {}", show_yt_link);
-
+    // User settings
     // Display "Open user's last.fm profile" button under activity
     let mut lastfm_nickname: String = String::new();
-    let show_lastfm_link = match args.profile_button {
+    let show_lastfm_link = match settings.profile_button {
         Some(nick) => {
             lastfm_nickname = nick;
             true
         }
         None => false,
     };
-    println!("[config] Profile button: {}", show_lastfm_link);
-    if show_lastfm_link {
-        println!("[config] Nickname set: {}", lastfm_nickname);
-    }
 
     // Enable/disable use of cache
-    let cache_enabled: bool = !args.disable_cache;
-    println!("[config] Cache: {}", cache_enabled);
-
-    // List available players and exit
-    let list_players: bool = args.list_players;
+    let cache_enabled: bool = !settings.disable_cache;
 
     // Get status only from player with given name
     let mut player_name: String = String::new();
-    let player_name_enabled: bool = match args.player_name {
+    let player_name_enabled: bool = match settings.player_name {
         Some(name) => {
             player_name = name;
-            println!("[config] Player name: {}", player_name);
+            // println!("[config] Player name: {}", player_name);
             true
         }
         None => false,
     };
 
     // Allowlist of music players
-    let mut allowlist: Vec<String> = Vec::new();
-    let allowlist_enabled: bool = match args.allowlist.len() {
+    let allowlist_enabled: bool = match settings.allowlist.len() {
         0 => false,
-        _ => {
-            allowlist = args.allowlist.clone();
-            println!("[config] Music Players Allowlist: ");
-            for name in &allowlist {
-                println!(" * {} ", name);
-            }
-            true
-        }
+        _ => true,
     };
 
     // Vars for activity update detection
@@ -169,10 +99,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     if cache_enabled {
-        println!("[config] Cache location: {}", &cache_dir.display());
+        debug_log!(
+            settings.debug_log,
+            "Cache location: {}",
+            &cache_dir.display()
+        );
         match fs::create_dir_all(&cache_dir) {
             Ok(a) => a,
-            Err(_) => println!("[cache] Could not create cache directory."),
+            Err(_) => println!("Could not create cache directory."),
         }
     }
 
@@ -187,13 +121,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ) {
         Ok(db) => {
             if cache_enabled {
-                println!("[cache] loaded from file: {}", &db_path.display());
+                println!("Cache loaded from file: {}", &db_path.display());
             }
             db
         }
         Err(_) => {
             if cache_enabled {
-                println!("[cache] generated new cache file: {}", &db_path.display());
+                println!("Generated new cache file: {}", &db_path.display());
             }
             PickleDb::new(
                 &db_path,
@@ -215,13 +149,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("Could not connect to D-Bus.");
                     dbus_notif = true;
                 }
-                sleep(Duration::from_secs(interval));
+                sleep(Duration::from_secs(settings.interval));
                 continue;
             }
         };
 
         // List available players and exit
-        if list_players {
+        if settings.list_players {
             match player.find_all() {
                 Ok(player_list) => {
                     if player_list.is_empty() {
@@ -262,7 +196,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         if allowlist_enabled {
-            for allowlist_entry in &allowlist {
+            for allowlist_entry in &settings.allowlist {
                 player_finder = player.find_by_name(&allowlist_entry);
 
                 if player_finder.is_ok() {
@@ -298,7 +232,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 is_interrupted = true;
                 utils::clear_activity(&mut is_activity_set, &mut client);
-                sleep(Duration::from_secs(interval));
+                sleep(Duration::from_secs(settings.interval));
                 continue;
             }
         };
@@ -316,7 +250,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("Could not connect to Discord. Waiting for discord to start...");
                         discord_notif = true;
                     }
-                    sleep(Duration::from_secs(interval));
+                    sleep(Duration::from_secs(settings.interval));
                     continue;
                 }
             };
@@ -336,7 +270,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("Could not reconnect to Discord. Waiting for discord to start...");
                         discord_notif = true;
                     }
-                    sleep(Duration::from_secs(interval));
+                    sleep(Duration::from_secs(settings.interval));
                     continue;
                 }
             };
@@ -386,14 +320,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 & (title == "Unknown Title")
             {
                 // println!("[debug] Unknown metadata, skipping...");
-                sleep(Duration::from_secs(interval));
+                sleep(Duration::from_secs(settings.interval));
                 break;
             }
 
             // If artist or track is empty then break
             if (artist.len() == 0) | (title.len() == 0) {
                 // println!("[debug] Unknown metadata, skipping...");
-                sleep(Duration::from_secs(interval));
+                sleep(Duration::from_secs(settings.interval));
                 break;
             }
 
@@ -431,7 +365,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             if !metadata_changed & !is_interrupted {
                 // println!("[debug] same metadata and status, skipping...");
-                sleep(Duration::from_secs(interval));
+                sleep(Duration::from_secs(settings.interval));
                 continue;
             }
 
@@ -561,7 +495,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             let mut buttons = Vec::new();
-            if show_yt_link {
+            if settings.yt_button {
                 buttons.push(activity::Button::new(
                     "Search this song on YouTube",
                     &yt_url,
@@ -595,9 +529,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             };
 
-            sleep(Duration::from_secs(interval));
+            sleep(Duration::from_secs(settings.interval));
         }
 
-        sleep(Duration::from_secs(interval));
+        sleep(Duration::from_secs(settings.interval));
     }
 }

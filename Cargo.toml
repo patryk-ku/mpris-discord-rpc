@@ -13,6 +13,8 @@ clap = { version = "4.5.26", features = ["derive"] }
 dotenvy_macro = "0.15.7"
 pickledb = "0.5.1"
 clap-serde-derive = "0.2.1"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_yaml = "0.9.34"
 
 [profile.release]
 strip = true
