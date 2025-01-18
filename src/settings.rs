@@ -38,7 +38,7 @@ pub struct Cli {
     #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", value_parser = clap::value_parser!(String))]
     pub allowlist: Vec<String>,
 
-    /// Enable debug log
+    /// Show debug log
     #[arg(short = 'b', long)]
     pub debug_log: bool,
 
@@ -65,7 +65,7 @@ pub enum Commands {
     Enable {},
     /// Stop RPC and disable autostart
     Disable {},
-    /// Use to restart the service to reload the changed configuration file.
+    /// Use to restart the service and reload the changed configuration file.
     Restart {},
 }
 
