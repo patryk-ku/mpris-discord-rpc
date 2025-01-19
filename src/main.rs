@@ -371,9 +371,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
 
             // Check if song repeated
-            if track_position < last_track_position {
+            if (track_position < last_track_position) && !metadata_changed {
+                debug_log!(settings.debug_log, "Detected a potential song seek/replay");
                 metadata_changed = true;
             }
+            last_track_position = track_position; // update it before loop continue
             debug_log!(settings.debug_log, "metadata_changed: {}", metadata_changed);
 
             if !metadata_changed & !is_interrupted {
@@ -414,7 +416,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             last_album = album.to_string();
             last_artist = artist.to_string();
             last_album_id = album_id.to_string();
-            last_track_position = track_position;
             last_is_playing = is_playing;
 
             // Set activity
