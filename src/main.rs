@@ -2,8 +2,6 @@ use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use dotenvy_macro::dotenv;
 use mpris::PlayerFinder;
 use pickledb::{PickleDb, PickleDbDumpPolicy, SerializationMethod};
-use reqwest;
-use serde_json;
 use url_escape;
 
 use std::env;
@@ -46,8 +44,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if interval < 5 {
         interval = 5
     }
-
     debug_log!(settings.debug_log, "interval: {}", interval);
+
     // Display "Open user's last.fm profile" button under activity
     let mut lastfm_nickname: String = String::new();
     let show_lastfm_link = match settings.profile_button {
@@ -92,17 +90,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set cache path
     let cache_dir = match env::var("XDG_CACHE_HOME") {
-        Ok(val) => {
-            let mut tmp_path = PathBuf::from(val);
-            tmp_path.push("mpris-discord-rpc");
-            tmp_path
-        }
-        Err(_) => {
-            let mut tmp_path = PathBuf::from(home_dir);
-            tmp_path.push(".cache");
-            tmp_path.push("mpris-discord-rpc");
-            tmp_path
-        }
+        Ok(xgd_cache_home) => PathBuf::from(xgd_cache_home).join("mpris-discord-rpc"),
+        Err(_) => home_dir.join(".cache/mpris-discord-rpc"),
     };
 
     if cache_enabled {
@@ -111,16 +100,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "Cache location: {}",
             &cache_dir.display()
         );
-        match fs::create_dir_all(&cache_dir) {
-            Ok(a) => a,
-            Err(_) => println!("Could not create cache directory."),
+        if let Err(err) = fs::create_dir_all(&cache_dir) {
+            println!("Could not create cache directory: {}", err);
         }
     }
 
     // Cache file
-    let mut db_path = PathBuf::from(&cache_dir);
-    db_path.push("album_cache.db");
-
+    let db_path = cache_dir.join("album_cache.db");
     let mut album_cache = match PickleDb::load(
         &db_path,
         PickleDbDumpPolicy::AutoDump,
@@ -145,15 +131,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     loop {
+        debug_log!(
+            settings.debug_log,
+            "───────────────────────────────Loop─1───────────────────────────────────"
+        );
         // Connect to MPRIS
         let player = match PlayerFinder::new() {
-            Ok(a) => {
+            Ok(player) => {
                 dbus_notif = false;
-                a
+                player
             }
-            Err(_) => {
+            Err(err) => {
                 if !dbus_notif {
-                    println!("Could not connect to D-Bus.");
+                    println!("Could not connect to D-Bus: {}", err);
                     dbus_notif = true;
                 }
                 sleep(Duration::from_secs(interval));
@@ -212,12 +202,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Connect with player
         let player = match player_finder {
-            Ok(a) => {
+            Ok(player) => {
                 if player_notif != 1 {
                     println!("Found active player with MPRIS support.");
                     player_notif = 1;
                 }
-                a
+                player
             }
             Err(_) => {
                 if player_notif != 2 {
@@ -245,10 +235,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Connect with Discord
         if is_first_time {
             match client.connect() {
-                Ok(a) => {
+                Ok(_) => {
                     println!("Connected to Discord.");
                     discord_notif = false;
-                    a
                 }
                 Err(_) => {
                     if !discord_notif {
@@ -262,13 +251,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             is_first_time = false;
         } else {
             match client.reconnect() {
-                Ok(a) => {
+                Ok(_) => {
                     if discord_notif {
                         println!("Reconnected to Discord.");
                     }
                     is_interrupted = true;
                     discord_notif = false;
-                    a
                 }
                 Err(_) => {
                     if !discord_notif {
@@ -282,21 +270,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         loop {
+            debug_log!(
+                settings.debug_log,
+                "───────────────────────────────Loop─2───────────────────────────────────"
+            );
             // Get metadata from player
             let metadata = match player.get_metadata() {
-                Ok(a) => a,
-                Err(_) => {
-                    println!("Could not get metadata from player");
+                Ok(metadata) => metadata,
+                Err(err) => {
+                    println!("Could not get metadata from player: {}", err);
                     utils::clear_activity(&mut is_activity_set, &mut client);
                     break;
                 }
             };
-            // println!("{:#?}", metadata);
+            // debug_log!(settings.debug_log, "{:#?}", metadata);
 
             let playback_status = match player.get_playback_status() {
                 Ok(status) => status,
-                Err(_) => {
-                    println!("Could not get playback status from player");
+                Err(err) => {
+                    println!("Could not get playback status from player: {}", err);
                     utils::clear_activity(&mut is_activity_set, &mut client);
                     break;
                 }
@@ -308,6 +300,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 mpris::PlaybackStatus::Stopped => false,
             };
             // println!("{:#?}", playback_status);
+            debug_log!(
+                settings.debug_log,
+                "playback_status: {:#?}",
+                playback_status
+            );
 
             // Parse metadata
             let title = metadata.title().unwrap_or("Unknown Title");
@@ -315,8 +312,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if album.is_empty() {
                 album = "Unknown Album";
             }
-            let artist = metadata.artists().unwrap_or(vec!["Unknown Artist"]);
-            let artist = artist[0];
+            let artist = metadata.artists().unwrap_or(vec!["Unknown Artist"])[0];
             let album_id = format!("{} - {}", artist, album);
 
             // If all metadata values are unknown then break
@@ -324,24 +320,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 & (album == "Unknown Album")
                 & (title == "Unknown Title")
             {
-                // println!("[debug] Unknown metadata, skipping...");
+                debug_log!(settings.debug_log, "Unknown metadata, skipping...");
                 sleep(Duration::from_secs(interval));
                 break;
             }
 
             // If artist or track is empty then break
             if (artist.len() == 0) | (title.len() == 0) {
-                // println!("[debug] Unknown metadata, skipping...");
+                debug_log!(settings.debug_log, "Unknown metadata, skipping...");
                 sleep(Duration::from_secs(interval));
                 break;
             }
 
             let mut metadata_changed: bool = false;
-
-            // println!("{title} - {last_title}");
-            // println!("{album} - {last_album}");
-            // println!("{artist} - {last_artist}");
-            // println!("{is_playing} - {last_is_playing}");
+            debug_log!(settings.debug_log, "Checking if metadata changed:");
+            debug_log!(settings.debug_log, "{title} - {last_title}");
+            debug_log!(settings.debug_log, "{album} - {last_album}");
+            debug_log!(settings.debug_log, "{artist} - {last_artist}");
+            debug_log!(
+                settings.debug_log,
+                "is_playing: {} - {}",
+                is_playing,
+                last_is_playing
+            );
             if (title != last_title)
                 | (album != last_album)
                 | (artist != last_artist)
@@ -362,14 +363,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 Err(_) => Duration::new(0, 0).as_secs(),
             };
+            debug_log!(
+                settings.debug_log,
+                "track_position: {} - {}",
+                track_position,
+                last_track_position
+            );
 
             // Check if song repeated
             if track_position < last_track_position {
                 metadata_changed = true;
             }
+            debug_log!(settings.debug_log, "metadata_changed: {}", metadata_changed);
 
             if !metadata_changed & !is_interrupted {
-                // println!("[debug] same metadata and status, skipping...");
+                debug_log!(
+                    settings.debug_log,
+                    "The same metadata and status, skipping..."
+                );
+
                 sleep(Duration::from_secs(interval));
                 continue;
             }
@@ -381,64 +393,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             // Fetch cover from last.fm
-            if !album_id.eq(&last_album_id) {
-                // If no album or Unknown Album
-                if album.eq("Unknown Album") {
-                    println!("Missing album name or Unknown Album.");
-                    _cover_url = "missing-cover".to_string();
-                } else {
-                    // Load from cache if enabled
-                    let mut cache_url: String = String::new();
-                    if cache_enabled {
-                        cache_url = if album_cache.exists(&album_id) {
-                            match album_cache.get(&album_id) {
-                                Some(url) => url,
-                                None => String::new(),
-                            }
-                        } else {
-                            String::new()
-                        };
-                    }
-
-                    if (!cache_url.is_empty()) & (cache_url.len() > 5) {
-                        _cover_url = cache_url.to_string();
-                    } else {
-                        let request_url = format!("http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={}&artist={}&album={}&autocorrect=0&format=json", LASTFM_API_KEY, url_escape::encode_component(artist), url_escape::encode_component(album));
-
-                        _cover_url = match reqwest::blocking::get(request_url) {
-                            Ok(res) => {
-                                match res.json::<serde_json::Value>() {
-                                    Ok(data) => {
-                                        let mut url =
-                                            data["album"]["image"][3]["#text"].to_string();
-                                        if (!url.is_empty()) & (url.len() > 5) {
-                                            url.pop();
-                                            url.remove(0);
-
-                                            println!("[last.fm] fetched image link: {url}");
-                                            // Save cover url to cache
-                                            if cache_enabled {
-                                                match album_cache.set(&album_id, &url) {
-                                                Ok(_) => println!("[cache] saved image url for: {album_id}."),
-                                                Err(_) => println!("[cache] error, unable to write to cache file."),
-                                            }
-                                            }
-                                        } else {
-                                            url = "missing-cover".to_string();
-                                        }
-                                        url
-                                    }
-                                    Err(_) => "missing-cover".to_string(),
-                                }
-                            }
-                            Err(_) => "missing-cover".to_string(),
-                        };
-                    }
-                }
-            }
-
+            _cover_url = utils::get_cover_url(
+                &album_id,
+                &last_album_id,
+                album,
+                _cover_url,
+                cache_enabled,
+                &mut album_cache,
+                artist,
+                LASTFM_API_KEY,
+            );
             let image: String = if _cover_url.is_empty() {
-                "missing-cover".to_string()
+                String::from("missing-cover")
             } else {
                 _cover_url.clone()
             };
