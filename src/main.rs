@@ -1,10 +1,7 @@
-use clap::Parser;
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use dotenvy_macro::dotenv;
 use mpris::PlayerFinder;
 use pickledb::{PickleDb, PickleDbDumpPolicy, SerializationMethod};
-use reqwest;
-use serde_json;
 use url_escape;
 
 use std::env;
@@ -14,118 +11,55 @@ use std::path::PathBuf;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 
-fn clear_activity(is_activity_set: &mut bool, client: &mut DiscordIpcClient) {
-    if *is_activity_set {
-        let is_activity_cleared = client.clear_activity().is_ok();
-
-        if is_activity_cleared {
-            *is_activity_set = false;
-            return;
-        }
-
-        let is_reconnected = client.reconnect().is_ok();
-
-        if !is_reconnected {
-            return;
-        }
-
-        if client.clear_activity().is_ok() {
-            *is_activity_set = false;
-        }
-    }
-}
-
-#[derive(Parser)]
-#[command(author, version, about, long_about = None)]
-struct Cli {
-    /// Activity refresh rate (min 5)
-    #[arg(short, long, value_name = "seconds", default_value_t = 10, value_parser = clap::value_parser!(u64).range(5..))]
-    interval: u64,
-
-    /// Display "Open user's last.fm profile" button
-    #[arg(short, long, value_name = "nickname", value_parser = clap::value_parser!(String))]
-    profile_button: Option<String>,
-
-    /// Display "Search this song on YouTube" button
-    #[arg(short, long)]
-    yt_button: bool,
-
-    /// Disable cache (not recommended)
-    #[arg(short, long)]
-    disable_cache: bool,
-
-    /// Displays all available music player names and exits. Use to get your player name for -a or -n argument
-    #[arg(short, long)]
-    list_players: bool,
-
-    /// Get status only from one given player. Check --allowlist-add if you want to use multiple players. Use -l to get player exact name to use with this argument
-    #[arg(short = 'n', long, value_name = "Player Name", value_parser = clap::value_parser!(String))]
-    player_name: Option<String>,
-
-    /// Add player name to allowlist. Use multiple times to add several players. Cannot be used with --player-name.
-    #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", conflicts_with = "player_name", value_parser = clap::value_parser!(String))]
-    allowlist: Vec<String>,
-}
+mod settings;
+mod utils;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Cli::parse();
-
     // Load api key from .env file durning compilation
     const LASTFM_API_KEY: &str = dotenv!("LASTFM_API_KEY");
 
-    // User settings parsed from args:
-    // Refresh rate (sleep after every loop)
-    let interval: u64 = args.interval; // important: min 5 sec
-    println!("[config] Refresh rate: {} seconds", interval);
-
-    // Display "Search this song on YouTube" button under activity
-    let show_yt_link: bool = args.yt_button;
-    println!("[config] YT button: {}", show_yt_link);
-
-    // Display "Open user's last.fm profile" button under activity
-    let mut lastfm_nickname: String = String::new();
-    let show_lastfm_link = match args.profile_button {
-        Some(nick) => {
-            lastfm_nickname = nick;
-            true
-        }
-        None => false,
+    // Set home path, If $HOME is not set, do not write or read anything from the user's disk
+    let (home_exists, home_dir) = match env::var("HOME") {
+        Ok(val) => (true, PathBuf::from(val)),
+        Err(_) => (false, PathBuf::from("/")),
     };
-    println!("[config] Profile button: {}", show_lastfm_link);
-    if show_lastfm_link {
-        println!("[config] Nickname set: {}", lastfm_nickname);
+
+    let settings = settings::load_settings();
+
+    debug_log!(settings.debug_log, "Settings: {:#?}", settings);
+    debug_log!(settings.debug_log, "home_exists: {}", home_exists);
+    debug_log!(settings.debug_log, "home_dir: {}", home_dir.display());
+
+    // Exec subcommands
+    match settings.suboptions.command {
+        Some(settings::Commands::Enable {}) => utils::enable_service(&home_dir),
+        Some(settings::Commands::Disable {}) => utils::disable_service(),
+        Some(settings::Commands::Restart {}) => utils::restart_service(),
+        None => {}
     }
 
+    // User settings
+    // Main loop interval
+    let mut interval = settings.interval.unwrap_or(10);
+    if interval < 5 {
+        interval = 5
+    }
+    debug_log!(settings.debug_log, "interval: {}", interval);
+
+    // Nicknames for buttons
+    let lastfm_name = settings.lastfm_name.unwrap_or_default();
+    let listenbrainz_name = settings.listenbrainz_name.unwrap_or_default();
+
     // Enable/disable use of cache
-    let cache_enabled: bool = !args.disable_cache;
-    println!("[config] Cache: {}", cache_enabled);
-
-    // List available players and exit
-    let list_players: bool = args.list_players;
-
-    // Get status only from player with given name
-    let mut player_name: String = String::new();
-    let player_name_enabled: bool = match args.player_name {
-        Some(name) => {
-            player_name = name;
-            println!("[config] Player name: {}", player_name);
-            true
-        }
-        None => false,
-    };
+    let mut cache_enabled: bool = !settings.disable_cache;
+    if !home_exists {
+        cache_enabled = false;
+    }
 
     // Allowlist of music players
-    let mut allowlist: Vec<String> = Vec::new();
-    let allowlist_enabled: bool = match args.allowlist.len() {
+    let allowlist_enabled: bool = match settings.allowlist.len() {
         0 => false,
-        _ => {
-            allowlist = args.allowlist.clone();
-            println!("[config] Music Players Allowlist: ");
-            for name in &allowlist {
-                println!(" * {} ", name);
-            }
-            true
-        }
+        _ => true,
     };
 
     // Vars for activity update detection
@@ -149,36 +83,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = DiscordIpcClient::new("1129859263741837373")?;
 
     // Set cache path
-    let home_dir = match env::var("HOME") {
-        Ok(val) => PathBuf::from(val),
-        Err(_) => PathBuf::from("~/"),
-    };
     let cache_dir = match env::var("XDG_CACHE_HOME") {
-        Ok(val) => {
-            let mut tmp_path = PathBuf::from(val);
-            tmp_path.push("mpris-discord-rpc");
-            tmp_path
-        }
-        Err(_) => {
-            let mut tmp_path = PathBuf::from(home_dir);
-            tmp_path.push(".cache");
-            tmp_path.push("mpris-discord-rpc");
-            tmp_path
-        }
+        Ok(xgd_cache_home) => PathBuf::from(xgd_cache_home).join("mpris-discord-rpc"),
+        Err(_) => home_dir.join(".cache/mpris-discord-rpc"),
     };
 
     if cache_enabled {
-        println!("[config] Cache location: {}", &cache_dir.display());
-        match fs::create_dir_all(&cache_dir) {
-            Ok(a) => a,
-            Err(_) => println!("[cache] Could not create cache directory."),
+        debug_log!(
+            settings.debug_log,
+            "Cache location: {}",
+            &cache_dir.display()
+        );
+        if let Err(err) = fs::create_dir_all(&cache_dir) {
+            println!("Could not create cache directory: {}", err);
         }
     }
 
     // Cache file
-    let mut db_path = PathBuf::from(&cache_dir);
-    db_path.push("album_cache.db");
-
+    let db_path = cache_dir.join("album_cache.db");
     let mut album_cache = match PickleDb::load(
         &db_path,
         PickleDbDumpPolicy::AutoDump,
@@ -186,13 +108,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ) {
         Ok(db) => {
             if cache_enabled {
-                println!("[cache] loaded from file: {}", &db_path.display());
+                println!("Cache loaded from file: {}", &db_path.display());
             }
             db
         }
         Err(_) => {
             if cache_enabled {
-                println!("[cache] generated new cache file: {}", &db_path.display());
+                println!("Generated new cache file: {}", &db_path.display());
             }
             PickleDb::new(
                 &db_path,
@@ -203,15 +125,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     loop {
-        // Connect to MPRIS2
+        debug_log!(
+            settings.debug_log,
+            "───────────────────────────────Loop─1───────────────────────────────────"
+        );
+        // Connect to MPRIS
         let player = match PlayerFinder::new() {
-            Ok(a) => {
+            Ok(player) => {
                 dbus_notif = false;
-                a
+                player
             }
-            Err(_) => {
+            Err(err) => {
                 if !dbus_notif {
-                    println!("Could not connect to D-Bus.");
+                    println!("Could not connect to D-Bus: {}", err);
                     dbus_notif = true;
                 }
                 sleep(Duration::from_secs(interval));
@@ -220,15 +146,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         // List available players and exit
-        if list_players {
+        if settings.list_players {
             match player.find_all() {
                 Ok(player_list) => {
                     if player_list.is_empty() {
-                        println!("Could not find any player with MPRIS2 support.");
+                        println!("Could not find any player with MPRIS support.");
                     } else {
                         println!("");
                         println!("────────────────────────────────────────────────────");
-                        println!("List of available music players with MPRIS2 support:");
+                        println!("List of available music players with MPRIS support:");
                         for music_player in &player_list {
                             println!(" * {}", music_player.identity());
                         }
@@ -236,58 +162,56 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("Use the name to choose from which source the script should take data for the Discord status.");
                         println!("Usage instructions:");
                         println!("");
-                        println!(r#" ./mpris-discord-rpc -a "{}""#, player_list[0].identity());
+                        println!(r#" mpris-discord-rpc -a "{}""#, player_list[0].identity());
                         println!("");
                         println!("You can use the -a argument multiple times to add more than one player to the allowlist:");
                         println!("");
                         println!(
-                            r#" ./mpris-discord-rpc -a "{}" -a "Second Player" -a "Any other player""#,
+                            r#" mpris-discord-rpc -a "{}" -a "Second Player" -a "Any other player""#,
                             player_list[0].identity()
                         );
                     }
                 }
                 Err(_) => {
-                    println!("Could not find any player with MPRIS2 support.");
+                    println!("Could not find any player with MPRIS support.");
                 }
             };
             return Ok(());
         }
 
         // Find active player (and filter them by name if enabled)
-        let mut player_finder = player.find_active();
+        let player_finder = if allowlist_enabled {
+            let mut allowlist_finder = Err(mpris::FindingError::NoPlayerFound);
+            for allowlist_entry in &settings.allowlist {
+                allowlist_finder = player.find_by_name(&allowlist_entry);
 
-        if player_name_enabled {
-            player_finder = player.find_by_name(&player_name);
-        }
-
-        if allowlist_enabled {
-            for allowlist_entry in &allowlist {
-                player_finder = player.find_by_name(&allowlist_entry);
-
-                if player_finder.is_ok() {
+                if allowlist_finder.is_ok() {
                     break;
                 }
             }
-        }
+            allowlist_finder
+        } else {
+            player.find_active()
+        };
 
         // Connect with player
         let player = match player_finder {
-            Ok(a) => {
+            Ok(player) => {
                 if player_notif != 1 {
-                    println!("Found active player with MPRIS2 support.");
+                    println!("Found active player with MPRIS support.");
                     player_notif = 1;
                 }
-                a
+                player
             }
             Err(_) => {
                 if player_notif != 2 {
                     if allowlist_enabled {
                         println!(
-                            "Could not find any active player from your allowlist with MPRIS2 support. Waiting for any player from your allowlist..."
+                            "Could not find any active player from your allowlist with MPRIS support. Waiting for any player from your allowlist..."
                         );
                     } else {
                         println!(
-                            "Could not find any player with MPRIS2 support. Waiting for any player..."
+                            "Could not find any player with MPRIS support. Waiting for any player..."
                         );
                     }
 
@@ -296,7 +220,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 is_interrupted = true;
-                clear_activity(&mut is_activity_set, &mut client);
+                utils::clear_activity(&mut is_activity_set, &mut client);
                 sleep(Duration::from_secs(interval));
                 continue;
             }
@@ -305,10 +229,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Connect with Discord
         if is_first_time {
             match client.connect() {
-                Ok(a) => {
+                Ok(_) => {
                     println!("Connected to Discord.");
                     discord_notif = false;
-                    a
                 }
                 Err(_) => {
                     if !discord_notif {
@@ -322,13 +245,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             is_first_time = false;
         } else {
             match client.reconnect() {
-                Ok(a) => {
+                Ok(_) => {
                     if discord_notif {
                         println!("Reconnected to Discord.");
                     }
                     is_interrupted = true;
                     discord_notif = false;
-                    a
                 }
                 Err(_) => {
                     if !discord_notif {
@@ -342,22 +264,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         loop {
+            debug_log!(
+                settings.debug_log,
+                "───────────────────────────────Loop─2───────────────────────────────────"
+            );
             // Get metadata from player
             let metadata = match player.get_metadata() {
-                Ok(a) => a,
-                Err(_) => {
-                    println!("Could not get metadata from player");
-                    clear_activity(&mut is_activity_set, &mut client);
+                Ok(metadata) => metadata,
+                Err(err) => {
+                    println!("Could not get metadata from player: {}", err);
+                    utils::clear_activity(&mut is_activity_set, &mut client);
                     break;
                 }
             };
-            // println!("{:#?}", metadata);
+            // debug_log!(settings.debug_log, "{:#?}", metadata);
 
             let playback_status = match player.get_playback_status() {
                 Ok(status) => status,
-                Err(_) => {
-                    println!("Could not get playback status from player");
-                    clear_activity(&mut is_activity_set, &mut client);
+                Err(err) => {
+                    println!("Could not get playback status from player: {}", err);
+                    utils::clear_activity(&mut is_activity_set, &mut client);
                     break;
                 }
             };
@@ -368,6 +294,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 mpris::PlaybackStatus::Stopped => false,
             };
             // println!("{:#?}", playback_status);
+            debug_log!(
+                settings.debug_log,
+                "playback_status: {:#?}",
+                playback_status
+            );
 
             // Parse metadata
             let title = metadata.title().unwrap_or("Unknown Title");
@@ -375,8 +306,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if album.is_empty() {
                 album = "Unknown Album";
             }
-            let artist = metadata.artists().unwrap_or(vec!["Unknown Artist"]);
-            let artist = artist[0];
+            let artist = metadata.artists().unwrap_or(vec!["Unknown Artist"])[0];
             let album_id = format!("{} - {}", artist, album);
 
             // If all metadata values are unknown then break
@@ -384,24 +314,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 & (album == "Unknown Album")
                 & (title == "Unknown Title")
             {
-                // println!("[debug] Unknown metadata, skipping...");
+                debug_log!(settings.debug_log, "Unknown metadata, skipping...");
                 sleep(Duration::from_secs(interval));
                 break;
             }
 
             // If artist or track is empty then break
             if (artist.len() == 0) | (title.len() == 0) {
-                // println!("[debug] Unknown metadata, skipping...");
+                debug_log!(settings.debug_log, "Unknown metadata, skipping...");
                 sleep(Duration::from_secs(interval));
                 break;
             }
 
             let mut metadata_changed: bool = false;
-
-            // println!("{title} - {last_title}");
-            // println!("{album} - {last_album}");
-            // println!("{artist} - {last_artist}");
-            // println!("{is_playing} - {last_is_playing}");
+            debug_log!(settings.debug_log, "Checking if metadata changed:");
+            debug_log!(settings.debug_log, "{title} - {last_title}");
+            debug_log!(settings.debug_log, "{album} - {last_album}");
+            debug_log!(settings.debug_log, "{artist} - {last_artist}");
+            debug_log!(
+                settings.debug_log,
+                "is_playing: {} - {}",
+                is_playing,
+                last_is_playing
+            );
             if (title != last_title)
                 | (album != last_album)
                 | (artist != last_artist)
@@ -422,14 +357,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 Err(_) => Duration::new(0, 0).as_secs(),
             };
+            debug_log!(
+                settings.debug_log,
+                "track_position: {} - {}",
+                track_position,
+                last_track_position
+            );
 
             // Check if song repeated
-            if track_position < last_track_position {
+            if (track_position < last_track_position) && !metadata_changed {
+                debug_log!(settings.debug_log, "Detected a potential song seek/replay");
                 metadata_changed = true;
             }
+            last_track_position = track_position; // update it before loop continue
+            debug_log!(settings.debug_log, "metadata_changed: {}", metadata_changed);
 
             if !metadata_changed & !is_interrupted {
-                // println!("[debug] same metadata and status, skipping...");
+                debug_log!(
+                    settings.debug_log,
+                    "The same metadata and status, skipping..."
+                );
+
                 sleep(Duration::from_secs(interval));
                 continue;
             }
@@ -441,64 +389,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             // Fetch cover from last.fm
-            if !album_id.eq(&last_album_id) {
-                // If no album or Unknown Album
-                if album.eq("Unknown Album") {
-                    println!("Missing album name or Unknown Album.");
-                    _cover_url = "missing-cover".to_string();
-                } else {
-                    // Load from cache if enabled
-                    let mut cache_url: String = String::new();
-                    if cache_enabled {
-                        cache_url = if album_cache.exists(&album_id) {
-                            match album_cache.get(&album_id) {
-                                Some(url) => url,
-                                None => String::new(),
-                            }
-                        } else {
-                            String::new()
-                        };
-                    }
-
-                    if (!cache_url.is_empty()) & (cache_url.len() > 5) {
-                        _cover_url = cache_url.to_string();
-                    } else {
-                        let request_url = format!("http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={}&artist={}&album={}&autocorrect=0&format=json", LASTFM_API_KEY, url_escape::encode_component(artist), url_escape::encode_component(album));
-
-                        _cover_url = match reqwest::blocking::get(request_url) {
-                            Ok(res) => {
-                                match res.json::<serde_json::Value>() {
-                                    Ok(data) => {
-                                        let mut url =
-                                            data["album"]["image"][3]["#text"].to_string();
-                                        if (!url.is_empty()) & (url.len() > 5) {
-                                            url.pop();
-                                            url.remove(0);
-
-                                            println!("[last.fm] fetched image link: {url}");
-                                            // Save cover url to cache
-                                            if cache_enabled {
-                                                match album_cache.set(&album_id, &url) {
-                                                Ok(_) => println!("[cache] saved image url for: {album_id}."),
-                                                Err(_) => println!("[cache] error, unable to write to cache file."),
-                                            }
-                                            }
-                                        } else {
-                                            url = "missing-cover".to_string();
-                                        }
-                                        url
-                                    }
-                                    Err(_) => "missing-cover".to_string(),
-                                }
-                            }
-                            Err(_) => "missing-cover".to_string(),
-                        };
-                    }
-                }
-            }
-
+            _cover_url = utils::get_cover_url(
+                &album_id,
+                &last_album_id,
+                album,
+                _cover_url,
+                cache_enabled,
+                &mut album_cache,
+                artist,
+                LASTFM_API_KEY,
+            );
             let image: String = if _cover_url.is_empty() {
-                "missing-cover".to_string()
+                String::from("missing-cover")
             } else {
                 _cover_url.clone()
             };
@@ -508,7 +410,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             last_album = album.to_string();
             last_artist = artist.to_string();
             last_album_id = album_id.to_string();
-            last_track_position = track_position;
             last_is_playing = is_playing;
 
             // Set activity
@@ -521,14 +422,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 "paused".to_string()
             };
-            let yt_url: String = format!(
-                "https://www.youtube.com/results?search_query={}",
-                url_escape::encode_component(&song_name)
-            );
-            let lastfm_url: String = format!(
-                "https://www.last.fm/user/{}",
-                url_escape::encode_component(&lastfm_nickname)
-            );
 
             let payload = activity::Activity::new()
                 .state(&artist)
@@ -559,31 +452,81 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 payload.timestamps(activity::Timestamps::new().end(time_start.try_into().unwrap()))
             };
 
+            // Create urls for activity links
+            let yt_url: String = format!(
+                "https://www.youtube.com/results?search_query={}",
+                url_escape::encode_component(&song_name)
+            );
+            let lastfm_url: String = format!(
+                "https://www.last.fm/user/{}",
+                url_escape::encode_component(&lastfm_name)
+            );
+            let listenbrainz_url: String = format!(
+                "https://listenbrainz.org/user/{}/",
+                url_escape::encode_component(&listenbrainz_name)
+            );
+
+            // Add activity buttons
             let mut buttons = Vec::new();
-            if show_yt_link {
-                buttons.push(activity::Button::new(
-                    "Search this song on YouTube",
-                    &yt_url,
-                ));
+            let mut first_button = "";
+            for button in &settings.button {
+                let initial_len = buttons.len();
+                if initial_len == 2 {
+                    break;
+                }
+
+                // Make sure buttons wont repeat
+                if initial_len > 0 {
+                    if first_button == button {
+                        continue;
+                    }
+                }
+
+                match button.as_str() {
+                    "yt" => {
+                        buttons.push(activity::Button::new(
+                            "Search this song on YouTube",
+                            &yt_url,
+                        ));
+                    }
+                    "lastfm" => {
+                        if lastfm_name.len() > 0 {
+                            buttons.push(activity::Button::new("Last.fm profile", &lastfm_url));
+                        }
+                    }
+                    "listenbrainz" => {
+                        if listenbrainz_name.len() > 0 {
+                            buttons.push(activity::Button::new(
+                                "Listenbrainz profile",
+                                &listenbrainz_url,
+                            ));
+                        }
+                    }
+                    "shamelessAd" => {
+                        buttons.push(activity::Button::new(
+                            "Get This RPC",
+                            "https://github.com/patryk-ku/mpris-discord-rpc",
+                        ));
+                    }
+                    _ => continue,
+                }
+
+                // Make sure buttons wont repeat
+                if initial_len < buttons.len() {
+                    first_button = button;
+                }
             }
-            if show_lastfm_link {
-                buttons.push(activity::Button::new(
-                    "Open user's last.fm profile",
-                    &lastfm_url,
-                ));
-            }
-            let payload = if buttons.len() > 0 {
-                payload.buttons(buttons)
-            } else {
-                payload
+
+            let payload = match buttons.is_empty() {
+                false => payload.buttons(buttons),
+                true => payload,
             };
 
             match client.set_activity(payload) {
-                Ok(a) => {
+                Ok(_) => {
                     is_interrupted = false;
                     is_activity_set = true;
                     println!("=> Set activity [{status_text}]: {song_name}");
-                    a
                 }
                 Err(_) => {
                     println!("Could not set activity.");

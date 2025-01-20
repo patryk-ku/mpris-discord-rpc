@@ -1,0 +1,29 @@
+# mpris-discord-rpc configuration file
+
+# You can reset this file using the command:
+# mpris-discord-rpc --reset-config
+# Or you can manually copy the example config from repo:
+# https://github.com/patryk-ku/mpris-discord-rpc/blob/main/config.yaml
+
+# Activity refresh rate in seconds (min 5)
+interval: 10
+
+# Select visible activity buttons (max 2) [possible values: yt, lastfm, listenbrainz, shamelessAd]
+# button:
+#   - yt
+#   - lastfm
+
+# Uncomment and enter your nicknames for activity buttons
+# lastfm_name: "nickname"
+# listenbrainz_name: "nickname"
+
+# Only use the status from the following music players
+# Use -l, --list-players to get player exact name to use with this option
+# The order matters and the first is the most important.
+# allowlist:
+#   - "VLC Media Player"
+#   - "Chrome"
+#   - "Any other player"
+
+# Disable cache (not recommended)
+disable_cache: false
