@@ -108,16 +108,17 @@ Commands:
   help     Print this message or the help of the given subcommand(s)
 
 Options:
-  -i, --interval <seconds>           Activity refresh rate (min 5, default 10)
-  -p, --profile-button <nickname>    Display "Open user's last.fm profile" button
-  -y, --yt-button                    Display "Search this song on YouTube" button
-  -d, --disable-cache                Disable cache (not recommended)
-  -l, --list-players                 Displays all available music player names and exits. Use to get your player name for -a argument
-  -a, --allowlist-add <Player Name>  Get status only from given player. Use multiple times to add several players
-  -b, --debug-log                    Show debug log
-      --reset-config                 Reset config file (overwrites the old file if exists)
-  -h, --help                         Print help
-  -V, --version                      Print version
+  -i, --interval <seconds>            Activity refresh rate (min 5, default 10)
+  -b, --button <name>                 Select visible buttons [possible values: yt, lastfm, listenbrainz, shamelessAd]
+      --lastfm-name <nickname>        Your Last.fm nickname
+      --listenbrainz-name <nickname>  Your Listenbrainz nickname
+  -l, --list-players                  Displays all available music player names and exits. Use to get your player name for -a argument
+  -a, --allowlist-add <Player Name>   Get status only from given player. Use multiple times to add several players
+  -d, --disable-cache                 Disable cache (not recommended)
+      --debug-log                     Show debug log
+      --reset-config                  Reset config file (overwrites the old file if exists)
+  -h, --help                          Print help
+  -V, --version                       Print version
 ```
 
 > [!IMPORTANT]
@@ -171,6 +172,28 @@ allowlist:
 ```
 
 Use the `-l`, `--list-players` to get your player name.
+
+### Buttons
+
+You can choose from available options: `yt`, `lasfm`, `listenbrainz`, `shamelessAd` (max 2). Remember to provide your usernames for the services you want to add as buttons.
+
+arguments:
+
+```sh
+mpris-discord-rpc -b yt -b lastfm --lastfm-name nickname
+```
+
+config:
+
+```yaml
+allowlist:
+  - "yt"
+  - "lastfm"
+
+lastfm_name: "nickname"
+```
+
+> You can request more buttons by opening an Issue.
 
 ### Flatpak Discord fix
 

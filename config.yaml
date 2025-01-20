@@ -8,15 +8,14 @@
 # Activity refresh rate in seconds (min 5)
 interval: 10
 
-# Display "Open user's last.fm profile" button
-# Uncomment and enter your lastfm nickname
-# profile_button: "username"
+# Select visible activity buttons (max 2) [possible values: yt, lastfm, listenbrainz, shamelessAd]
+# button:
+#   - yt
+#   - lastfm
 
-# Display "Search this song on YouTube" button
-yt_button: false
-
-# Disable cache (not recommended)
-disable_cache: false
+# Uncomment and enter your nicknames for activity buttons
+# lastfm_name: "nickname"
+# listenbrainz_name: "nickname"
 
 # Only use the status from the following music players
 # Use -l, --list-players to get player exact name to use with this option
@@ -26,5 +25,5 @@ disable_cache: false
 #   - "Chrome"
 #   - "Any other player"
 
-# Enable debug log
-debug_log: false
+# Disable cache (not recommended)
+disable_cache: false

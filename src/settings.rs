@@ -17,17 +17,17 @@ pub struct Cli {
     #[arg(short, long, value_name = "seconds", value_parser = clap::value_parser!(u64).range(5..))]
     pub interval: Option<u64>,
 
-    /// Display "Open user's last.fm profile" button
-    #[arg(short, long, value_name = "nickname", value_parser = clap::value_parser!(String))]
-    pub profile_button: Option<String>,
+    /// Select visible buttons
+    #[arg(short, long, value_name = "name", value_parser = ["yt", "lastfm", "listenbrainz", "shamelessAd"])]
+    pub button: Vec<String>,
 
-    /// Display "Search this song on YouTube" button
-    #[arg(short, long)]
-    pub yt_button: bool,
+    /// Your Last.fm nickname
+    #[arg(long, value_name = "nickname", value_parser = clap::value_parser!(String))]
+    pub lastfm_name: Option<String>,
 
-    /// Disable cache (not recommended)
-    #[arg(short, long)]
-    pub disable_cache: bool,
+    /// Your Listenbrainz nickname
+    #[arg(long, value_name = "nickname", value_parser = clap::value_parser!(String))]
+    pub listenbrainz_name: Option<String>,
 
     /// Displays all available music player names and exits. Use to get your player name for -a argument
     #[arg(short, long)]
@@ -38,8 +38,13 @@ pub struct Cli {
     #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", value_parser = clap::value_parser!(String))]
     pub allowlist: Vec<String>,
 
+    /// Disable cache (not recommended)
+    #[arg(short, long)]
+    pub disable_cache: bool,
+
     /// Show debug log
-    #[arg(short = 'b', long)]
+    #[arg(long)]
+    #[serde(skip_deserializing)]
     pub debug_log: bool,
 
     /// Reset config file (overwrites the old file if exists)
@@ -88,15 +93,14 @@ fn create_config_file(home_dir: &PathBuf, force: bool) -> (bool, PathBuf) {
 # Activity refresh rate in seconds (min 5)
 interval: 10
 
-# Display "Open user's last.fm profile" button
-# Uncomment and enter your lastfm nickname
-# profile_button: "username"
+# Select visible activity buttons (max 2) [possible values: yt, lastfm, listenbrainz, shamelessAd]
+# button:
+#   - yt
+#   - lastfm
 
-# Display "Search this song on YouTube" button
-yt_button: false
-
-# Disable cache (not recommended)
-disable_cache: false
+# Uncomment and enter your nicknames for activity buttons
+# lastfm_name: "nickname"
+# listenbrainz_name: "nickname"
 
 # Only use the status from the following music players
 # Use -l, --list-players to get player exact name to use with this option
@@ -106,8 +110,8 @@ disable_cache: false
 #   - "Chrome"
 #   - "Any other player"
 
-# Enable debug log
-debug_log: false
+# Disable cache (not recommended)
+disable_cache: false
 "#;
 
     match fs::create_dir_all(&config_dir) {
@@ -184,12 +188,16 @@ pub fn load_settings() -> Cli {
         config.interval = args.interval;
     }
 
-    if args.profile_button != config.profile_button && args.profile_button.is_some() {
-        config.profile_button = args.profile_button;
+    if args.button != config.button && args.button.len() > 0 {
+        config.button = args.button;
     }
 
-    if args.yt_button {
-        config.yt_button = args.yt_button;
+    if args.lastfm_name != config.lastfm_name && args.lastfm_name.is_some() {
+        config.lastfm_name = args.lastfm_name;
+    }
+
+    if args.listenbrainz_name != config.listenbrainz_name && args.listenbrainz_name.is_some() {
+        config.listenbrainz_name = args.listenbrainz_name;
     }
 
     if args.disable_cache {

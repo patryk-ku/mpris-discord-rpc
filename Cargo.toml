@@ -1,9 +1,9 @@
 [package]
 name = "mpris-discord-rpc"
-version = "0.1.6"
+version = "0.2.0"
 edition = "2021"
 authors = ["Patryk Kurdziel <patryk.kurdziel@protonmail.com>"]
-description = "MPRIS Discord music rich presence status with support for album covers  and progress bar."
+description = "MPRIS Discord music rich presence status with support for album covers and progress bar."
 repository = "https://github.com/patryk-ku/mpris-discord-rpc"
 license = "MIT"
 

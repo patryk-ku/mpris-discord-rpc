@@ -46,15 +46,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     debug_log!(settings.debug_log, "interval: {}", interval);
 
-    // Display "Open user's last.fm profile" button under activity
-    let mut lastfm_nickname: String = String::new();
-    let show_lastfm_link = match settings.profile_button {
-        Some(nick) => {
-            lastfm_nickname = nick;
-            true
-        }
-        None => false,
-    };
+    // Nicknames for buttons
+    let lastfm_name = settings.lastfm_name.unwrap_or_default();
+    let listenbrainz_name = settings.listenbrainz_name.unwrap_or_default();
 
     // Enable/disable use of cache
     let mut cache_enabled: bool = !settings.disable_cache;
@@ -428,14 +422,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 "paused".to_string()
             };
-            let yt_url: String = format!(
-                "https://www.youtube.com/results?search_query={}",
-                url_escape::encode_component(&song_name)
-            );
-            let lastfm_url: String = format!(
-                "https://www.last.fm/user/{}",
-                url_escape::encode_component(&lastfm_nickname)
-            );
 
             let payload = activity::Activity::new()
                 .state(&artist)
@@ -466,31 +452,81 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 payload.timestamps(activity::Timestamps::new().end(time_start.try_into().unwrap()))
             };
 
+            // Create urls for activity links
+            let yt_url: String = format!(
+                "https://www.youtube.com/results?search_query={}",
+                url_escape::encode_component(&song_name)
+            );
+            let lastfm_url: String = format!(
+                "https://www.last.fm/user/{}",
+                url_escape::encode_component(&lastfm_name)
+            );
+            let listenbrainz_url: String = format!(
+                "https://listenbrainz.org/user/{}/",
+                url_escape::encode_component(&listenbrainz_name)
+            );
+
+            // Add activity buttons
             let mut buttons = Vec::new();
-            if settings.yt_button {
-                buttons.push(activity::Button::new(
-                    "Search this song on YouTube",
-                    &yt_url,
-                ));
+            let mut first_button = "";
+            for button in &settings.button {
+                let initial_len = buttons.len();
+                if initial_len == 2 {
+                    break;
+                }
+
+                // Make sure buttons wont repeat
+                if initial_len > 0 {
+                    if first_button == button {
+                        continue;
+                    }
+                }
+
+                match button.as_str() {
+                    "yt" => {
+                        buttons.push(activity::Button::new(
+                            "Search this song on YouTube",
+                            &yt_url,
+                        ));
+                    }
+                    "lastfm" => {
+                        if lastfm_name.len() > 0 {
+                            buttons.push(activity::Button::new("Last.fm profile", &lastfm_url));
+                        }
+                    }
+                    "listenbrainz" => {
+                        if listenbrainz_name.len() > 0 {
+                            buttons.push(activity::Button::new(
+                                "Listenbrainz profile",
+                                &listenbrainz_url,
+                            ));
+                        }
+                    }
+                    "shamelessAd" => {
+                        buttons.push(activity::Button::new(
+                            "Get This RPC",
+                            "https://github.com/patryk-ku/mpris-discord-rpc",
+                        ));
+                    }
+                    _ => continue,
+                }
+
+                // Make sure buttons wont repeat
+                if initial_len < buttons.len() {
+                    first_button = button;
+                }
             }
-            if show_lastfm_link {
-                buttons.push(activity::Button::new(
-                    "Open user's last.fm profile",
-                    &lastfm_url,
-                ));
-            }
-            let payload = if buttons.len() > 0 {
-                payload.buttons(buttons)
-            } else {
-                payload
+
+            let payload = match buttons.is_empty() {
+                false => payload.buttons(buttons),
+                true => payload,
             };
 
             match client.set_activity(payload) {
-                Ok(a) => {
+                Ok(_) => {
                     is_interrupted = false;
                     is_activity_set = true;
                     println!("=> Set activity [{status_text}]: {song_name}");
-                    a
                 }
                 Err(_) => {
                     println!("Could not set activity.");
