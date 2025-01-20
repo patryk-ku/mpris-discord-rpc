@@ -84,6 +84,7 @@ Alternatively, you can skip systemd and configure the binary to run on startup y
 
 </details>
 
+> [!NOTE]
 > If there is no package for your distribution and you have experience creating packages for it, you can open an Issue so we can work together to add it.
 
 ## Configuration and usage
@@ -120,9 +121,6 @@ Options:
   -h, --help                          Print help
   -V, --version                       Print version
 ```
-
-> [!IMPORTANT]
-> After Discord recent profile layout update, users cannot see their activity buttons anymore, BUT other users can see them. This is not a bug but a feature from Discord. You can make sure the buttons work by logging into an alternative account in your browser, or just by asking a friend :)
 
 ### Autostart
 
@@ -192,6 +190,9 @@ allowlist:
 
 lastfm_name: "nickname"
 ```
+
+> [!IMPORTANT]
+> After Discord recent profile layout update, users cannot see their activity buttons anymore, BUT other users can see them. This is not a bug but a feature from Discord. You can make sure the buttons work by logging into an alternative account in your browser, or just by asking a friend :)
 
 > You can request more buttons by opening an Issue.
 
