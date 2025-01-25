@@ -38,6 +38,10 @@ pub struct Cli {
     #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", value_parser = clap::value_parser!(String))]
     pub allowlist: Vec<String>,
 
+    /// Hide album name
+    #[arg(long)]
+    pub hide_album_name: bool,
+
     /// Disable cache (not recommended)
     #[arg(short, long)]
     pub disable_cache: bool,
@@ -109,6 +113,9 @@ interval: 10
 #   - "VLC Media Player"
 #   - "Chrome"
 #   - "Any other player"
+
+# Hide the album name to decrease activity height
+hide_album_name: false
 
 # Disable cache (not recommended)
 disable_cache: false
@@ -198,6 +205,10 @@ pub fn load_settings() -> Cli {
 
     if args.listenbrainz_name != config.listenbrainz_name && args.listenbrainz_name.is_some() {
         config.listenbrainz_name = args.listenbrainz_name;
+    }
+
+    if args.hide_album_name {
+        config.hide_album_name = args.hide_album_name;
     }
 
     if args.disable_cache {

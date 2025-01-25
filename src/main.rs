@@ -423,16 +423,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "paused".to_string()
             };
 
+            let mut assets = activity::Assets::new()
+                .large_image(&image)
+                .small_image(&status_text)
+                .small_text(&status_text);
+
+            if !settings.hide_album_name {
+                assets = assets.large_text(&album);
+            }
+
             let payload = activity::Activity::new()
                 .state(&artist)
                 .details(&title)
-                .assets(
-                    activity::Assets::new()
-                        .large_image(&image)
-                        .small_image(&status_text)
-                        .large_text(&album)
-                        .small_text(&status_text),
-                )
+                .assets(assets)
                 .activity_type(activity::ActivityType::Listening);
 
             let payload = if is_track_position & (track_duration > 0) {

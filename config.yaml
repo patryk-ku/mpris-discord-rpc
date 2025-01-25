@@ -25,5 +25,8 @@ interval: 10
 #   - "Chrome"
 #   - "Any other player"
 
+# Hide the album name to decrease activity height
+hide_album_name: false
+
 # Disable cache (not recommended)
 disable_cache: false
