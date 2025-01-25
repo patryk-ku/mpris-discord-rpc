@@ -2,7 +2,7 @@
 
 ![img-min-optimized](https://github.com/user-attachments/assets/15990d23-51af-4d98-ae7d-7feabe84c351)
 
-MPRIS Discord music rich presence status **with support for album covers and progress bar**. In addition, there is also an option to enable buttons with links to your profile on last.fm and a search song on Youtube. Written in Rust.
+Linux Discord rich presence for music, using MPRIS with **album cover and progress bar support**. You can customize additional buttons, such as linking to your Last.fm profile or searching for the current song on YouTube. There's also an option to display either the player's icon or your Last.fm avatar next to the album cover. The application is written in Rust.
 
 ## Supported players
 
