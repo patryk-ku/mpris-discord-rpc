@@ -115,6 +115,7 @@ Options:
       --listenbrainz-name <nickname>  Your Listenbrainz nickname
   -l, --list-players                  Displays all available music player names and exits. Use to get your player name for -a argument
   -a, --allowlist-add <Player Name>   Get status only from given player. Use multiple times to add several players
+      --hide-album-name               Hide album name
   -d, --disable-cache                 Disable cache (not recommended)
       --debug-log                     Show debug log
       --reset-config                  Reset config file (overwrites the old file if exists)
