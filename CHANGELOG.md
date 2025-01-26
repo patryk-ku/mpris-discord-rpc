@@ -1,3 +1,8 @@
+## v0.2.1
+
+- Added option to hide album title in activity.
+- Added the ability to customize displayed icon adjacent to album artwork. Available options: none, play/pause icons, music player icon, Last.fm avatar.
+
 ## v0.2.0
 
 - (⚠️ **Breaking**) The `-n`, `--player-name` argument has been removed. Use `-a`, `--allowlist-add` instead.

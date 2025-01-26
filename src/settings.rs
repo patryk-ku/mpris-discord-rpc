@@ -29,6 +29,10 @@ pub struct Cli {
     #[arg(long, value_name = "nickname", value_parser = clap::value_parser!(String))]
     pub listenbrainz_name: Option<String>,
 
+    /// Select the icon displayed next to the album cover (default playPause)
+    #[arg(short, long, value_name = "name", value_parser = ["playPause", "player", "lastfmAvatar", "none"])]
+    pub small_image: Option<String>,
+
     /// Displays all available music player names and exits. Use to get your player name for -a argument
     #[arg(short, long)]
     #[serde(skip_deserializing)]
@@ -105,6 +109,9 @@ interval: 10
 # Uncomment and enter your nicknames for activity buttons
 # lastfm_name: "nickname"
 # listenbrainz_name: "nickname"
+
+# Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
+small_image: playPause
 
 # Only use the status from the following music players
 # Use -l, --list-players to get player exact name to use with this option
@@ -205,6 +212,10 @@ pub fn load_settings() -> Cli {
 
     if args.listenbrainz_name != config.listenbrainz_name && args.listenbrainz_name.is_some() {
         config.listenbrainz_name = args.listenbrainz_name;
+    }
+
+    if args.small_image != config.small_image && args.small_image.is_some() {
+        config.small_image = args.small_image;
     }
 
     if args.hide_album_name {

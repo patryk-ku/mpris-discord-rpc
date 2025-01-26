@@ -113,6 +113,7 @@ Options:
   -b, --button <name>                 Select visible buttons [possible values: yt, lastfm, listenbrainz, shamelessAd]
       --lastfm-name <nickname>        Your Last.fm nickname
       --listenbrainz-name <nickname>  Your Listenbrainz nickname
+  -s, --small-image <name>            Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
   -l, --list-players                  Displays all available music player names and exits. Use to get your player name for -a argument
   -a, --allowlist-add <Player Name>   Get status only from given player. Use multiple times to add several players
       --hide-album-name               Hide album name

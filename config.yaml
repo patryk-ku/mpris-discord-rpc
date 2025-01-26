@@ -17,6 +17,9 @@ interval: 10
 # lastfm_name: "nickname"
 # listenbrainz_name: "nickname"
 
+# Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
+small_image: playPause
+
 # Only use the status from the following music players
 # Use -l, --list-players to get player exact name to use with this option
 # The order matters and the first is the most important.

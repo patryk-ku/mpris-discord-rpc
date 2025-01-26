@@ -225,3 +225,45 @@ pub fn get_cover_url(
 
     return String::from("missing-cover");
 }
+
+pub fn get_lastfm_avatar(username: &str, lastfm_api_key: &str) -> String {
+    let request_url = format!(
+        "http://ws.audioscrobbler.com/2.0/?method=user.getinfo&api_key={}&user={}&format=json",
+        lastfm_api_key,
+        url_escape::encode_component(username)
+    );
+
+    let mut url: String = match reqwest::blocking::get(request_url) {
+        Ok(res) => match res.json::<serde_json::Value>() {
+            Ok(data) => data["user"]["image"][3]["#text"].to_string(),
+            Err(_) => String::new(),
+        },
+        Err(_) => String::new(),
+    };
+
+    if !url.is_empty() && (url.len() > 15) {
+        url.pop();
+        url.remove(0);
+        println!("[last.fm] fetched avatar link: {}", url);
+        return url;
+    }
+
+    return String::new();
+}
+
+pub fn sanitize_name(input: &str) -> String {
+    input
+        .to_lowercase()
+        .split_whitespace()
+        .collect::<Vec<&str>>()
+        .join("_")
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '_')
+        .collect()
+}
+
+// pub fn format_time(seconds: u64) -> String {
+//     let minutes = seconds / 60;
+//     let remaining_seconds = seconds % 60;
+//     format!("{:02}:{:02}", minutes, remaining_seconds)
+// }
