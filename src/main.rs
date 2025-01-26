@@ -50,6 +50,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let lastfm_name = settings.lastfm_name.unwrap_or_default();
     let listenbrainz_name = settings.listenbrainz_name.unwrap_or_default();
 
+    let small_image = settings.small_image.unwrap_or(String::from("playPause"));
+    let mut lastfm_avatar = String::new();
+    if small_image == "lastfmAvatar" && !lastfm_name.is_empty() {
+        lastfm_avatar = utils::get_lastfm_avatar(&lastfm_name, LASTFM_API_KEY);
+        debug_log!(settings.debug_log, "lastfm_avatar: {}", lastfm_avatar);
+    }
+    let lastfm_icon_text = if !lastfm_name.is_empty() {
+        lastfm_name.to_string() + " on Last.fm"
+    } else {
+        String::new()
+    };
+
     // Enable/disable use of cache
     let mut cache_enabled: bool = !settings.disable_cache;
     if !home_exists {
@@ -225,6 +237,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 continue;
             }
         };
+
+        let player_name = player.identity();
+        let player_id = utils::sanitize_name(player_name);
+        debug_log!(settings.debug_log, "player_name: {}", player_name);
+        debug_log!(settings.debug_log, "player_id: {}", player_id);
 
         // Connect with Discord
         if is_first_time {
@@ -423,19 +440,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "paused".to_string()
             };
 
-            let payload = activity::Activity::new()
+            let mut assets = activity::Assets::new().large_image(&image);
+
+            if !settings.hide_album_name {
+                assets = assets.large_text(&album);
+            }
+
+            match small_image.as_str() {
+                "player" => assets = assets.small_image(&player_id).small_text(&player_name),
+                "lastfmAvatar" => {
+                    if !lastfm_avatar.is_empty() {
+                        assets = assets
+                            .small_image(&lastfm_avatar)
+                            .small_text(&lastfm_icon_text);
+                    }
+                }
+                "none" => {}
+                _ => assets = assets.small_image(&status_text).small_text(&status_text),
+            }
+
+            // Display paused icon anyway if playpack is paused or stopped
+            if status_text != "playing" {
+                assets = assets.small_image(&status_text).small_text(&status_text)
+            }
+
+            let mut payload = activity::Activity::new()
                 .state(&artist)
                 .details(&title)
-                .assets(
-                    activity::Assets::new()
-                        .large_image(&image)
-                        .small_image(&status_text)
-                        .large_text(&album)
-                        .small_text(&status_text),
-                )
+                .assets(assets)
                 .activity_type(activity::ActivityType::Listening);
 
-            let payload = if is_track_position & (track_duration > 0) {
+            payload = if is_track_position & (track_duration > 0) {
                 let time_end = time_start + track_duration;
                 if is_playing {
                     payload.timestamps(
@@ -517,7 +552,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
 
-            let payload = match buttons.is_empty() {
+            payload = match buttons.is_empty() {
                 false => payload.buttons(buttons),
                 true => payload,
             };

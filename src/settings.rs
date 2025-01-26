@@ -29,6 +29,10 @@ pub struct Cli {
     #[arg(long, value_name = "nickname", value_parser = clap::value_parser!(String))]
     pub listenbrainz_name: Option<String>,
 
+    /// Select the icon displayed next to the album cover (default playPause)
+    #[arg(short, long, value_name = "name", value_parser = ["playPause", "player", "lastfmAvatar", "none"])]
+    pub small_image: Option<String>,
+
     /// Displays all available music player names and exits. Use to get your player name for -a argument
     #[arg(short, long)]
     #[serde(skip_deserializing)]
@@ -37,6 +41,10 @@ pub struct Cli {
     /// Get status only from given player. Use multiple times to add several players.
     #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", value_parser = clap::value_parser!(String))]
     pub allowlist: Vec<String>,
+
+    /// Hide album name
+    #[arg(long)]
+    pub hide_album_name: bool,
 
     /// Disable cache (not recommended)
     #[arg(short, long)]
@@ -102,6 +110,9 @@ interval: 10
 # lastfm_name: "nickname"
 # listenbrainz_name: "nickname"
 
+# Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
+small_image: playPause
+
 # Only use the status from the following music players
 # Use -l, --list-players to get player exact name to use with this option
 # The order matters and the first is the most important.
@@ -109,6 +120,9 @@ interval: 10
 #   - "VLC Media Player"
 #   - "Chrome"
 #   - "Any other player"
+
+# Hide the album name to decrease activity height
+hide_album_name: false
 
 # Disable cache (not recommended)
 disable_cache: false
@@ -198,6 +212,14 @@ pub fn load_settings() -> Cli {
 
     if args.listenbrainz_name != config.listenbrainz_name && args.listenbrainz_name.is_some() {
         config.listenbrainz_name = args.listenbrainz_name;
+    }
+
+    if args.small_image != config.small_image && args.small_image.is_some() {
+        config.small_image = args.small_image;
+    }
+
+    if args.hide_album_name {
+        config.hide_album_name = args.hide_album_name;
     }
 
     if args.disable_cache {
