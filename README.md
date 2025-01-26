@@ -1,8 +1,8 @@
 # mpris-discord-rpc
 
-![img-min-optimized](https://github.com/user-attachments/assets/15990d23-51af-4d98-ae7d-7feabe84c351)
+![banner](.github/assets/banner.png)
 
-Linux Discord rich presence for music, using MPRIS with **album cover and progress bar support**. You can customize additional buttons, such as linking to your Last.fm profile or searching for the current song on YouTube. There's also an option to display either the player's icon or your Last.fm avatar next to the album cover. The application is written in Rust.
+Linux Discord rich presence for music, using MPRIS with **album cover and progress bar support**. You can customize additional buttons, such as linking to your Last.fm profile or searching for the current song on YouTube. There's also an option to display either the music player's icon or your Last.fm avatar next to the album cover. The application is written in Rust.
 
 ## Supported players
 
@@ -198,6 +198,31 @@ lastfm_name: "nickname"
 
 > You can request more buttons by opening an Issue.
 
+### The icon next to the album cover
+
+You can choose from available options: `playPause`, `player`, `lastfmAvatar`, `none`.
+
+arguments:
+
+```sh
+mpris-discord-rpc -s player
+```
+
+config:
+
+```yaml
+small_image: player
+```
+
+Available music player icons: `Amberol`, `Elisa`, `GNOME Music`, `Google Chrome`, `Lollypop`, `Mozilla Firefox`, `Spotify`, `Strawberry`, `Tauon`, `VLC Media Player`, `Zen Browser`.
+
+Missing your player icon? Open an Issue with:
+
+- Icon link (png, min. 512x512 resolution - Discord requirement)
+- Player ID (obtainable by running with `--debug-log` parameter, search for the line with `[debug] player_id:`)
+
+Icons are managed through Discord Developer Portal, so no app update is needed after adding new ones.
+
 ### Flatpak Discord fix
 
 As flatpak applications are sandboxed this makes it difficult for any other programs to communicate with them. But this can be easily fixed using the following command:
@@ -240,3 +265,5 @@ If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-
 ## Credits
 
 I wouldn't have been able to create this without two fantastic crates: [mpris-rs](https://github.com/Mange/mpris-rs) and [discord-rich-presence](https://github.com/vionya/discord-rich-presence). Implementing these features myself would have been beyond my current skills. A huge thank you to their creators.
+
+Any trademarks, featured track metadata, artwork and coverart in banner, music player icons and streaming service logos belong to their respective owners.
