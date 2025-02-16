@@ -216,7 +216,7 @@ config:
 small_image: player
 ```
 
-Available music player icons: `Amberol`, `Elisa`, `GNOME Music`, `Google Chrome`, `Lollypop`, `Mozilla Firefox`, `Spotify`, `Strawberry`, `Tauon`, `VLC Media Player`, `Zen Browser`.
+Available music player icons: `Amberol`, `Audacious`, `Elisa`, `GNOME Music`, `Google Chrome`, `Lollypop`, `Mozilla Firefox`, `Spotify`, `Strawberry`, `Tauon`, `VLC Media Player`, `Zen Browser`.
 
 Missing your player icon? Open an Issue with:
 
