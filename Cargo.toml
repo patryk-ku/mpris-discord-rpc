@@ -1,6 +1,6 @@
 [package]
 name = "mpris-discord-rpc"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 authors = ["Patryk Kurdziel <patryk.kurdziel@protonmail.com>"]
 description = "MPRIS Discord music rich presence status with support for album covers and progress bar."
@@ -12,12 +12,12 @@ discord-rich-presence = "0.2.5"
 mpris = "2.0.1"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 url-escape = "0.1.1"
-serde_json = "1.0.135"
-clap = { version = "4.5.26", features = ["derive"] }
+serde_json = "1.0.140"
+clap = { version = "4.5.32", features = ["derive"] }
 dotenvy_macro = "0.15.7"
 pickledb = "0.5.1"
 clap-serde-derive = "0.2.1"
-serde = { version = "1.0.217", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
 
 [profile.release]
@@ -28,5 +28,5 @@ panic = "abort"
 
 [package.metadata.generate-rpm]
 assets = [
-    { source = "target/release/mpris-discord-rpc", dest = "/usr/bin/mpris-discord-rpc", mode = "755" },
+	{ source = "target/release/mpris-discord-rpc", dest = "/usr/bin/mpris-discord-rpc", mode = "755" },
 ]
