@@ -1,3 +1,8 @@
+## v0.2.2
+
+- Fixed: Incorrect album art display when the album artist differed from the track artist.
+- Updated dependencies to latest versions.
+
 ## v0.2.1
 
 - Added option to hide album title in activity.

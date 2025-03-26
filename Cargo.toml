@@ -1,6 +1,6 @@
 [package]
 name = "mpris-discord-rpc"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 authors = ["Patryk Kurdziel <patryk.kurdziel@protonmail.com>"]
 description = "MPRIS Discord music rich presence status with support for album covers and progress bar."
@@ -28,5 +28,5 @@ panic = "abort"
 
 [package.metadata.generate-rpm]
 assets = [
-    { source = "target/release/mpris-discord-rpc", dest = "/usr/bin/mpris-discord-rpc", mode = "755" },
+	{ source = "target/release/mpris-discord-rpc", dest = "/usr/bin/mpris-discord-rpc", mode = "755" },
 ]
