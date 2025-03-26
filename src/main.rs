@@ -78,6 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut last_title: String = String::new();
     let mut last_album: String = String::new();
     let mut last_artist: String = String::new();
+    let mut last_album_artist: String = String::new();
     let mut last_album_id: String = String::new();
     let mut last_track_position: u64 = 0;
     let mut last_is_playing: bool = false;
@@ -324,7 +325,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 album = "Unknown Album";
             }
             let artist = metadata.artists().unwrap_or(vec!["Unknown Artist"])[0];
-            let album_id = format!("{} - {}", artist, album);
+            let mut album_artist = metadata.album_artists().unwrap_or(vec!["Unknown Artist"])[0];
+            if album_artist.is_empty() || album_artist == "Unknown Artist" {
+                album_artist = artist;
+            }
+            let album_id = format!("{} - {}", album_artist, album);
 
             // If all metadata values are unknown then break
             if (artist == "Unknown Artist")
@@ -348,6 +353,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             debug_log!(settings.debug_log, "{title} - {last_title}");
             debug_log!(settings.debug_log, "{album} - {last_album}");
             debug_log!(settings.debug_log, "{artist} - {last_artist}");
+            debug_log!(settings.debug_log, "{album_artist} - {last_album_artist}");
             debug_log!(
                 settings.debug_log,
                 "is_playing: {} - {}",
@@ -357,6 +363,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if (title != last_title)
                 | (album != last_album)
                 | (artist != last_artist)
+                | (album_artist != last_album_artist)
                 | (is_playing != last_is_playing)
             {
                 metadata_changed = true;
@@ -413,7 +420,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 _cover_url,
                 cache_enabled,
                 &mut album_cache,
-                artist,
+                album_artist,
                 LASTFM_API_KEY,
             );
             let image: String = if _cover_url.is_empty() {
@@ -426,6 +433,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             last_title = title.to_string();
             last_album = album.to_string();
             last_artist = artist.to_string();
+            last_album_artist = album_artist.to_string();
             last_album_id = album_id.to_string();
             last_is_playing = is_playing;
 
