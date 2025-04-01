@@ -477,7 +477,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             match small_image.as_str() {
                 "player" => {
-                    if !settings.disable_mpris_art_url && image.contains("https://i.ytimg.com") {
+                    if !settings.disable_mpris_art_url && image.contains("ytimg.com/") {
                         assets = assets.small_image("youtube").small_text("YouTube")
                     } else {
                         assets = assets.small_image(&player_id).small_text(&player_name)
