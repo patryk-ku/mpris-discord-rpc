@@ -41,7 +41,7 @@ pub struct Cli {
     #[arg(long, value_name = "player name", value_parser = clap::value_parser!(String))]
     pub force_player_name: Option<String>,
 
-    /// Allow MPRIS artUrl to be used as album cover if cover is not available on Last.fm
+    /// Prevent MPRIS artUrl to be used as album cover if cover is not available on Last.fm
     #[arg(long)]
     pub disable_mpris_art_url: bool,
 
