@@ -126,7 +126,7 @@ Options:
       --force-player-name <player name>
           Force a different player name to be displayed than the one actually used
       --disable-mpris-art-url
-          Allow MPRIS artUrl to be used as album cover if cover is not available on Last.fm
+          Prevent MPRIS artUrl to be used as album cover if cover is not available on Last.fm
   -l, --list-players
           Displays all available music player names and exits. Use to get your player name for -a argument
   -a, --allowlist-add <Player Name>
