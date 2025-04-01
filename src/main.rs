@@ -435,8 +435,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 album_artist,
                 LASTFM_API_KEY,
             );
-            let image: String = if _cover_url.is_empty() {
-                String::from("missing-cover")
+            let image: String = if _cover_url.is_empty() || _cover_url == "missing-cover" {
+                match metadata.art_url() {
+                    Some(url) => {
+                        if url.starts_with("http") && !settings.disable_mpris_art_url {
+                            url.to_string()
+                        } else {
+                            "missing-cover".to_string()
+                        }
+                    }
+                    _ => "missing-cover".to_string(),
+                }
             } else {
                 _cover_url.clone()
             };
@@ -467,7 +476,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             match small_image.as_str() {
-                "player" => assets = assets.small_image(&player_id).small_text(&player_name),
+                "player" => {
+                    if !settings.disable_mpris_art_url && image.contains("https://i.ytimg.com") {
+                        assets = assets.small_image("youtube").small_text("YouTube")
+                    } else {
+                        assets = assets.small_image(&player_id).small_text(&player_name)
+                    }
+                }
                 "lastfmAvatar" => {
                     if !lastfm_avatar.is_empty() {
                         assets = assets

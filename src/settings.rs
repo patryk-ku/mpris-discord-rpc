@@ -41,6 +41,10 @@ pub struct Cli {
     #[arg(long, value_name = "player name", value_parser = clap::value_parser!(String))]
     pub force_player_name: Option<String>,
 
+    /// Allow MPRIS artUrl to be used as album cover if cover is not available on Last.fm
+    #[arg(long)]
+    pub disable_mpris_art_url: bool,
+
     /// Displays all available music player names and exits. Use to get your player name for -a argument
     #[arg(short, long)]
     #[serde(skip_deserializing)]
@@ -125,6 +129,10 @@ small_image: playPause
 # List of available icons: https://github.com/patryk-ku/mpris-discord-rpc?tab=readme-ov-file#the-icon-next-to-the-album-cover
 # force_player_id: "custom_player_id"
 # force_player_name: "Custom Player Name"
+
+# Prevent MPRIS artUrl to be used as album cover if cover is not available on Last.fm. Mainly for working with thumbnails from YouTube and other video sites.
+# Additionally, it also disables icon and player name replacement on YouTube if it detects a YouTube thumbnail link.
+disable_mpris_art_url: false
 
 # Only use the status from the following music players
 # Use -l, --list-players to get player exact name to use with this option
@@ -237,6 +245,10 @@ pub fn load_settings() -> Cli {
 
     if args.force_player_name != config.force_player_name && args.force_player_name.is_some() {
         config.force_player_name = args.force_player_name;
+    }
+
+    if args.disable_mpris_art_url {
+        config.disable_mpris_art_url = args.disable_mpris_art_url;
     }
 
     if args.hide_album_name {

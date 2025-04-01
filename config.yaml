@@ -25,6 +25,10 @@ small_image: playPause
 # force_player_id: "custom_player_id"
 # force_player_name: "Custom Player Name"
 
+# Prevent MPRIS artUrl to be used as album cover if cover is not available on Last.fm. Mainly for working with thumbnails from YouTube and other video sites.
+# Additionally, it also disables icon and player name replacement on YouTube if it detects a YouTube thumbnail link.
+disable_mpris_art_url: false
+
 # Only use the status from the following music players
 # Use -l, --list-players to get player exact name to use with this option
 # The order matters and the first is the most important.

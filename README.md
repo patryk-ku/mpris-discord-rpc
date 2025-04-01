@@ -125,6 +125,8 @@ Options:
           Force a different player id to be displayed than the one actually used
       --force-player-name <player name>
           Force a different player name to be displayed than the one actually used
+      --disable-mpris-art-url
+          Allow MPRIS artUrl to be used as album cover if cover is not available on Last.fm
   -l, --list-players
           Displays all available music player names and exits. Use to get your player name for -a argument
   -a, --allowlist-add <Player Name>
@@ -233,7 +235,7 @@ config:
 small_image: player
 ```
 
-Available music player icons: `Amberol`, `Audacious`, `Elisa`, `GNOME Music`, `Google Chrome`, `Lollypop`, `Mozilla Firefox`, `Spotify`, `Strawberry`, `Tauon`, `TIDAL Hi-Fi`, `VLC Media Player`, `Zen Browser`.
+Available music player icons: `Amberol`, `Audacious`, `Elisa`, `Firefox`, `GNOME Music`, `Google Chrome`, `Lollypop`, `Mozilla Firefox`, `Spotify`, `Strawberry`, `Tauon`, `TIDAL Hi-Fi`, `VLC Media Player`, `YouTube`, `Zen Browser`.
 
 You can also force a different player icon and name to be displayed than the one actually used.
 
@@ -250,7 +252,7 @@ force_player_id: "vlc_media_player"
 force_player_name: "VLC media player"
 ```
 
-Icons are available for these ids: `amberol`, `audacious`, `chrome`, `elisa`, `lollypop`, `mozilla_firefox`, `mozilla_zen`, `music`, `spotify`, `strawberry`, `tauon`, `tidalhifi`, `vlc_media_player`
+Icons are available for these ids: `amberol`, `audacious`, `chrome`, `elisa`, `firefox`, `lollypop`, `mozilla_firefox`, `mozilla_zen`, `music`, `spotify`, `strawberry`, `tauon`, `tidalhifi`, `vlc_media_player`, `youtube`.
 
 **Missing your player icon?** Open an Issue with:
 
