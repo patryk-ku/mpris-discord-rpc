@@ -62,6 +62,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         String::new()
     };
 
+    // Force player id and name
+    let force_player_name = settings.force_player_name.unwrap_or_default();
+    let force_player_id = settings.force_player_id.unwrap_or_default();
+
     // Enable/disable use of cache
     let mut cache_enabled: bool = !settings.disable_cache;
     if !home_exists {
@@ -239,8 +243,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
-        let player_name = player.identity();
-        let player_id = utils::sanitize_name(player_name);
+        let player_name = if force_player_name.is_empty() {
+            player.identity().to_string()
+        } else {
+            force_player_name.to_string()
+        };
+        let player_id = if force_player_id.is_empty() {
+            utils::sanitize_name(&player_name)
+        } else {
+            force_player_id.to_string()
+        };
         debug_log!(settings.debug_log, "player_name: {}", player_name);
         debug_log!(settings.debug_log, "player_id: {}", player_id);
 

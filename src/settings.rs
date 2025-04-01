@@ -33,6 +33,14 @@ pub struct Cli {
     #[arg(short, long, value_name = "name", value_parser = ["playPause", "player", "lastfmAvatar", "none"])]
     pub small_image: Option<String>,
 
+    /// Force a different player id to be displayed than the one actually used
+    #[arg(long, value_name = "player_id", value_parser = clap::value_parser!(String))]
+    pub force_player_id: Option<String>,
+
+    /// Force a different player name to be displayed than the one actually used
+    #[arg(long, value_name = "player name", value_parser = clap::value_parser!(String))]
+    pub force_player_name: Option<String>,
+
     /// Displays all available music player names and exits. Use to get your player name for -a argument
     #[arg(short, long)]
     #[serde(skip_deserializing)]
@@ -112,6 +120,11 @@ interval: 10
 
 # Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
 small_image: playPause
+
+# Force a different player id and name to be displayed than the one actually used. "force_player_id" changes icon and "force_player_name" changes displayed text while hovering over the icon.
+# List of available icons: https://github.com/patryk-ku/mpris-discord-rpc?tab=readme-ov-file#the-icon-next-to-the-album-cover
+# force_player_id: "custom_player_id"
+# force_player_name: "Custom Player Name"
 
 # Only use the status from the following music players
 # Use -l, --list-players to get player exact name to use with this option
@@ -216,6 +229,14 @@ pub fn load_settings() -> Cli {
 
     if args.small_image != config.small_image && args.small_image.is_some() {
         config.small_image = args.small_image;
+    }
+
+    if args.force_player_id != config.force_player_id && args.force_player_id.is_some() {
+        config.force_player_id = args.force_player_id;
+    }
+
+    if args.force_player_name != config.force_player_name && args.force_player_name.is_some() {
+        config.force_player_name = args.force_player_name;
     }
 
     if args.hide_album_name {

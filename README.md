@@ -111,19 +111,36 @@ Commands:
   help     Print this message or the help of the given subcommand(s)
 
 Options:
-  -i, --interval <seconds>            Activity refresh rate (min 5, default 10)
-  -b, --button <name>                 Select visible buttons [possible values: yt, lastfm, listenbrainz, shamelessAd]
-      --lastfm-name <nickname>        Your Last.fm nickname
-      --listenbrainz-name <nickname>  Your Listenbrainz nickname
-  -s, --small-image <name>            Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
-  -l, --list-players                  Displays all available music player names and exits. Use to get your player name for -a argument
-  -a, --allowlist-add <Player Name>   Get status only from given player. Use multiple times to add several players
-      --hide-album-name               Hide album name
-  -d, --disable-cache                 Disable cache (not recommended)
-      --debug-log                     Show debug log
-      --reset-config                  Reset config file (overwrites the old file if exists)
-  -h, --help                          Print help
-  -V, --version                       Print version
+  -i, --interval <seconds>
+          Activity refresh rate (min 5, default 10)
+  -b, --button <name>
+          Select visible buttons [possible values: yt, lastfm, listenbrainz, shamelessAd]
+      --lastfm-name <nickname>
+          Your Last.fm nickname
+      --listenbrainz-name <nickname>
+          Your Listenbrainz nickname
+  -s, --small-image <name>
+          Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
+      --force-player-id <player_id>
+          Force a different player id to be displayed than the one actually used
+      --force-player-name <player name>
+          Force a different player name to be displayed than the one actually used
+  -l, --list-players
+          Displays all available music player names and exits. Use to get your player name for -a argument
+  -a, --allowlist-add <Player Name>
+          Get status only from given player. Use multiple times to add several players
+      --hide-album-name
+          Hide album name
+  -d, --disable-cache
+          Disable cache (not recommended)
+      --debug-log
+          Show debug log
+      --reset-config
+          Reset config file (overwrites the old file if exists)
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 ```
 
 ### Autostart
@@ -216,9 +233,26 @@ config:
 small_image: player
 ```
 
-Available music player icons: `Amberol`, `Audacious`, `Elisa`, `GNOME Music`, `Google Chrome`, `Lollypop`, `Mozilla Firefox`, `Spotify`, `Strawberry`, `Tauon`, `VLC Media Player`, `Zen Browser`.
+Available music player icons: `Amberol`, `Audacious`, `Elisa`, `GNOME Music`, `Google Chrome`, `Lollypop`, `Mozilla Firefox`, `Spotify`, `Strawberry`, `Tauon`, `TIDAL Hi-Fi`, `VLC Media Player`, `Zen Browser`.
 
-Missing your player icon? Open an Issue with:
+You can also force a different player icon and name to be displayed than the one actually used.
+
+arguments:
+
+```sh
+mpris-discord-rpc --force-player-id "vlc_media_player" --force-player-name "VLC media player"
+```
+
+config:
+
+```yaml
+force_player_id: "vlc_media_player"
+force_player_name: "VLC media player"
+```
+
+Icons are available for these ids: `amberol`, `audacious`, `chrome`, `elisa`, `lollypop`, `mozilla_firefox`, `mozilla_zen`, `music`, `spotify`, `strawberry`, `tauon`, `tidalhifi`, `vlc_media_player`
+
+**Missing your player icon?** Open an Issue with:
 
 - Icon link (png, min. 512x512 resolution - Discord requirement)
 - Player ID (obtainable by running with `--debug-log` parameter, search for the line with `[debug] player_id:`)

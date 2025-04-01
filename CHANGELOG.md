@@ -1,3 +1,7 @@
+## v0.2.3
+
+- Added the ability to force a different player icon and name than is actually used.
+
 ## v0.2.2
 
 - Fixed: Incorrect album art display when the album artist differed from the track artist.

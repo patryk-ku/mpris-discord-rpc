@@ -1,4 +1,3 @@
 ## Changes:
 
-- Fixed: Incorrect album art display when the album artist differed from the track artist.
-- Updated dependencies to latest versions.
+- Added the ability to force a different player icon and name than is actually used.

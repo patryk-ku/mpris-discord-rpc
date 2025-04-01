@@ -20,6 +20,11 @@ interval: 10
 # Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
 small_image: playPause
 
+# Force a different player id and name to be displayed than the one actually used. "force_player_id" changes icon and "force_player_name" changes displayed text while hovering over the icon.
+# List of available icons: https://github.com/patryk-ku/mpris-discord-rpc?tab=readme-ov-file#the-icon-next-to-the-album-cover
+# force_player_id: "custom_player_id"
+# force_player_name: "Custom Player Name"
+
 # Only use the status from the following music players
 # Use -l, --list-players to get player exact name to use with this option
 # The order matters and the first is the most important.

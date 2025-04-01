@@ -1,7 +1,7 @@
 # Maintainer: Patryk Kurdziel <patryk.kurdziel@protonmail.com>
 
 pkgname=mpris-discord-rpc
-pkgver=0.2.2
+pkgver=0.2.3
 pkgrel=1
 pkgdesc='MPRIS Discord music rich presence status with support for album covers and progress bar.'
 url="https://github.com/patryk-ku/$pkgname"
