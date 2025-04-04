@@ -37,6 +37,12 @@ disable_mpris_art_url: false
 #   - "Chrome"
 #   - "Any other player"
 
+# Will use the "watching" activity
+# Use -l, --list-players to get player exact name to use with this option
+# video_players:
+#   - "VLC Media Player"
+#   - "Chrome"
+
 # Hide the album name to decrease activity height
 hide_album_name: false
 

@@ -54,6 +54,10 @@ pub struct Cli {
     #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", value_parser = clap::value_parser!(String))]
     pub allowlist: Vec<String>,
 
+    /// Will use the "watching" activity. Use multiple times to add several players.
+    #[arg(short = 'w', long = "video-players", value_name = "Player Name", value_parser = clap::value_parser!(String))]
+    pub video_players: Vec<String>,
+
     /// Hide album name
     #[arg(long)]
     pub hide_album_name: bool,
@@ -141,6 +145,12 @@ disable_mpris_art_url: false
 #   - "VLC Media Player"
 #   - "Chrome"
 #   - "Any other player"
+
+# Will use the "watching" activity
+# Use -l, --list-players to get player exact name to use with this option
+# video_players:
+#   - "VLC Media Player"
+#   - "Chrome"
 
 # Hide the album name to decrease activity height
 hide_album_name: false
@@ -265,6 +275,10 @@ pub fn load_settings() -> Cli {
 
     if args.allowlist != config.allowlist && args.allowlist.len() > 0 {
         config.allowlist = args.allowlist;
+    }
+
+    if args.video_players != config.video_players && args.video_players.len() > 0 {
+        config.video_players = args.video_players;
     }
 
     if args.debug_log {

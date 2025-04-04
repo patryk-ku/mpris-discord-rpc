@@ -88,7 +88,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut last_is_playing: bool = false;
 
     let mut _cover_url: String = "".to_string();
-    let mut is_first_time: bool = true;
+    let mut is_first_time_audio: bool = true;
+    let mut is_first_time_video: bool = true;
     let mut is_interrupted: bool = false;
     let mut is_activity_set: bool = false;
 
@@ -97,7 +98,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut player_notif: u8 = 0;
     let mut discord_notif: bool = false;
 
-    let mut client = DiscordIpcClient::new("1129859263741837373")?;
+    let mut client_audio = DiscordIpcClient::new("1129859263741837373")?;
+    let mut client_video = DiscordIpcClient::new("1356756023813210293")?;
+    let mut client: &mut DiscordIpcClient = &mut client_audio;
 
     // Set cache path
     let cache_dir = match env::var("XDG_CACHE_HOME") {
@@ -243,6 +246,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
+        // Use video presence if player is in video_players list
+        let is_video_player = settings
+            .video_players
+            .iter()
+            .any(|player_name| player_name == &player.identity().to_string());
+        if is_video_player {
+            client = &mut client_video;
+            debug_log!(settings.debug_log, "Using video player presence");
+        } else {
+            client = &mut client_audio;
+            debug_log!(settings.debug_log, "Using audio player presence");
+        }
+
         let player_name = if force_player_name.is_empty() {
             player.identity().to_string()
         } else {
@@ -257,7 +273,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         debug_log!(settings.debug_log, "player_id: {}", player_id);
 
         // Connect with Discord
-        if is_first_time {
+        if (is_first_time_audio && !is_video_player) || (is_first_time_video && is_video_player) {
             match client.connect() {
                 Ok(_) => {
                     println!("Connected to Discord.");
@@ -272,7 +288,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     continue;
                 }
             };
-            is_first_time = false;
+            if is_video_player {
+                is_first_time_video = false;
+            } else {
+                is_first_time_audio = false;
+            }
         } else {
             match client.reconnect() {
                 Ok(_) => {
@@ -307,7 +327,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     break;
                 }
             };
-            // debug_log!(settings.debug_log, "{:#?}", metadata);
+            debug_log!(settings.debug_log, "{:#?}", metadata);
 
             let playback_status = match player.get_playback_status() {
                 Ok(status) => status,
@@ -503,7 +523,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .state(&artist)
                 .details(&title)
                 .assets(assets)
-                .activity_type(activity::ActivityType::Listening);
+                .activity_type(if is_video_player {
+                    activity::ActivityType::Watching
+                } else {
+                    activity::ActivityType::Listening
+                });
 
             payload = if is_track_position & (track_duration > 0) {
                 let time_end = time_start + track_duration;
