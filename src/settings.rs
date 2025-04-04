@@ -18,7 +18,7 @@ pub struct Cli {
     pub interval: Option<u64>,
 
     /// Select visible buttons
-    #[arg(short, long, value_name = "name", value_parser = ["yt", "lastfm", "listenbrainz", "shamelessAd"])]
+    #[arg(short, long, value_name = "name", value_parser = ["yt", "lastfm", "listenbrainz", "mprisUrl", "shamelessAd"])]
     pub button: Vec<String>,
 
     /// Your Last.fm nickname
@@ -117,7 +117,7 @@ fn create_config_file(home_dir: &PathBuf, force: bool) -> (bool, PathBuf) {
 # Activity refresh rate in seconds (min 5)
 interval: 10
 
-# Select visible activity buttons (max 2) [possible values: yt, lastfm, listenbrainz, shamelessAd]
+# Select visible activity buttons (max 2) [possible values: yt, lastfm, listenbrainz, mprisUrl, shamelessAd]
 # button:
 #   - yt
 #   - lastfm

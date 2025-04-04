@@ -8,7 +8,7 @@
 # Activity refresh rate in seconds (min 5)
 interval: 10
 
-# Select visible activity buttons (max 2) [possible values: yt, lastfm, listenbrainz, shamelessAd]
+# Select visible activity buttons (max 2) [possible values: yt, lastfm, listenbrainz, mprisUrl, shamelessAd]
 # button:
 #   - yt
 #   - lastfm

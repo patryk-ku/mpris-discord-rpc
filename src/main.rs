@@ -520,7 +520,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             let mut payload = activity::Activity::new()
-                .state(&artist)
                 .details(&title)
                 .assets(assets)
                 .activity_type(if is_video_player {
@@ -528,6 +527,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     activity::ActivityType::Listening
                 });
+
+            // Don't display Unknown Artist for videos
+            if !(is_video_player && artist == "by: Unknown Artist") {
+                payload = payload.state(&artist);
+            }
 
             payload = if is_track_position & (track_duration > 0) {
                 let time_end = time_start + track_duration;
@@ -559,6 +563,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "https://listenbrainz.org/user/{}/",
                 url_escape::encode_component(&listenbrainz_name)
             );
+            let mpris_url = match metadata.url() {
+                Some(url) => {
+                    let url_string = url.to_string();
+                    if url_string.starts_with("http://") || url_string.starts_with("https://") {
+                        url_string
+                    } else {
+                        String::new()
+                    }
+                }
+                _ => String::new(),
+            };
 
             // Add activity buttons
             let mut buttons = Vec::new();
@@ -594,6 +609,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 "Listenbrainz profile",
                                 &listenbrainz_url,
                             ));
+                        }
+                    }
+                    "mprisUrl" => {
+                        if mpris_url.is_empty() {
+                            // if mpris url is empty or not set convert button to yt button
+                            buttons.push(activity::Button::new(
+                                "Search this song on YouTube",
+                                &yt_url,
+                            ));
+                        } else {
+                            if is_video_player {
+                                buttons.push(activity::Button::new("Watch Now", &mpris_url));
+                            } else {
+                                buttons.push(activity::Button::new("Play Now", &mpris_url));
+                            }
                         }
                     }
                     "shamelessAd" => {
