@@ -114,7 +114,7 @@ Options:
   -i, --interval <seconds>
           Activity refresh rate (min 5, default 10)
   -b, --button <name>
-          Select visible buttons [possible values: yt, lastfm, listenbrainz, shamelessAd]
+          Select visible buttons [possible values: yt, lastfm, listenbrainz, mprisUrl, shamelessAd]
       --lastfm-name <nickname>
           Your Last.fm nickname
       --listenbrainz-name <nickname>
@@ -131,6 +131,8 @@ Options:
           Displays all available music player names and exits. Use to get your player name for -a argument
   -a, --allowlist-add <Player Name>
           Get status only from given player. Use multiple times to add several players
+  -w, --video-players <Player Name>
+          Will use the "watching" activity. Use multiple times to add several players
       --hide-album-name
           Hide album name
   -d, --disable-cache
@@ -194,9 +196,52 @@ allowlist:
 
 Use the `-l`, `--list-players` to get your player name.
 
+### "Watching Video" activity
+
+You can mark players as video players using the `-w`,`--video-players` argument or `video_players` in the config file. Then the status will be "Watching Video" and the RPC will be more suitable for videos. This argument can be used multiple times to add more players.
+
+arguments:
+
+```sh
+mpris-discord-rpc -w "VLC Media Player" -w "Chrome" -w "Any other player"
+```
+
+config:
+
+```yaml
+video_players:
+  - "VLC Media Player"
+  - "Chrome"
+  - "Any other player"
+```
+
+It's also possible to display a thumbnail or cover of the video you're watching (e.g., from YouTube), but this requires a player that provides the URL via MPRIS. There aren't many players that do this natively, but `mpv` with the `mpv-mpris` plugin will share the thumbnail of a video piped to it from `yt-dlp`. Other custom YouTube players sometimes have similar functionality. Streaming apps like Jellyfin should work too. Additionally, Chromium-based browsers or Firefox (and forks) can achieve similar functionality using a browser extension.
+
+KDE Plasma:
+
+- Google Chrome, Chromium, and Vivaldi: https://chromewebstore.google.com/detail/plasma-integration/cimiefiiaegbelhefglklhhakcgmhkai
+- Mozilla Firefox: https://addons.mozilla.org/en-US/firefox/addon/plasma-integration/
+- Microsoft Edge: https://microsoftedge.microsoft.com/addons/detail/plasma-integration/dnnckbejblnejeabhcmhklcaljjpdjeh
+
+GNOME (not tested):
+
+- Google Chrome, Chromium, and Vivaldi: https://chromewebstore.google.com/detail/integracja-z-gnome-shell/gphhapmejobijbbhgpjhcjognlahblep
+- Mozilla Firefox: https://addons.mozilla.org/en-US/firefox/addon/gnome-shell-integration/
+
+> [!CAUTION]
+> Using this RPC with browser extensions can potentially compromise your privacy. Most videos played in the browser will be displayed as your activity, including content from sites like Instagram, FB, Twitter, etc. Even NSFW content might be displayed with thumbnails, which could result in a ban from Discord or removal from servers. You can disable thumbnail display using the `--disable-mpris-art-url` argument or by setting `disable_mpris_art_url` to true in the config file.
+
 ### Buttons
 
-You can choose from available options: `yt`, `lasfm`, `listenbrainz`, `shamelessAd` (max 2). Remember to provide your usernames for the services you want to add as buttons.
+You can choose from available options (max 2):
+
+- `yt` - Search this song on YouTube.
+- `lasfm` - Last.fm profile.
+- `listenbrainz` - Listenbrainz profile.
+- `mprisUrl` - Some custom YT players, Jellyfin, mpv or browsers with extension may provide a URL to the currently playing content (see the "Watching Video" activity section for more details). When available, a "Play Now" button will be displayed for music and a "Watch Now" button for video. If the URL is not available, this button will be replaced with a `yt` button.
+- `shamelessAd` - Link to the repository of this RPC.
+
+Remember to provide your usernames for the services you want to add as buttons.
 
 arguments:
 
