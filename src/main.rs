@@ -356,8 +356,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if album.is_empty() {
                 album = "Unknown Album";
             }
-            let artist = metadata.artists().unwrap_or(vec!["Unknown Artist"])[0];
-            let mut album_artist = metadata.album_artists().unwrap_or(vec!["Unknown Artist"])[0];
+            let artist = match metadata.artists() {
+                Some(artists) => {
+                    if artists.is_empty() {
+                        "Unknown Artist"
+                    } else {
+                        artists[0]
+                    }
+                }
+                None => "Unknown Artist",
+            };
+            let mut album_artist = match metadata.album_artists() {
+                Some(artists) => {
+                    if artists.is_empty() {
+                        "Unknown Artist"
+                    } else {
+                        artists[0]
+                    }
+                }
+                None => "Unknown Artist",
+            };
             if album_artist.is_empty() || album_artist == "Unknown Artist" {
                 album_artist = artist;
             }
