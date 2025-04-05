@@ -149,7 +149,7 @@ Options:
 
 ### Autostart
 
-The `enable` subcommand automatically creates a user-level systemd service, reloads the daemon, and enables the service,  `disable` will disable the service, and `restart` will restart it.
+The `enable` subcommand automatically reloads the systemd daemon and enables the service, `disable` will disable the service, and `restart` will restart it.
 
 You can check the service status with:
 

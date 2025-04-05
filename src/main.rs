@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Exec subcommands
     match settings.suboptions.command {
-        Some(settings::Commands::Enable {}) => utils::enable_service(&home_dir),
+        Some(settings::Commands::Enable {}) => utils::enable_service(),
         Some(settings::Commands::Disable {}) => utils::disable_service(),
         Some(settings::Commands::Restart {}) => utils::restart_service(),
         None => {}

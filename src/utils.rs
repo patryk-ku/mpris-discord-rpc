@@ -2,8 +2,6 @@ use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 use pickledb::PickleDb;
 use reqwest;
 use serde_json;
-use std::fs;
-use std::path::PathBuf;
 use std::process;
 
 // Use to print debug log if enabled with argument
@@ -16,39 +14,7 @@ macro_rules! debug_log {
     };
 }
 
-pub fn enable_service(home_dir: &PathBuf) {
-    let service_dir = home_dir.join(".config/systemd/user");
-    let service_file = service_dir.join("mpris-discord-rpc.service");
-
-    let service_text = r#"[Unit]
-Description=MPRIS Discord music rich presence status with support for album covers and progress bar
-After=network.target
-
-[Service]
-ExecStart=/usr/bin/mpris-discord-rpc
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=default.target
-"#;
-
-    match fs::create_dir_all(&service_dir) {
-        Err(_) => {
-            println!("Failed to create user systemd services directory.");
-            process::exit(1);
-        }
-        Ok(_) => match fs::write(&service_file, service_text) {
-            Ok(_) => println!("Created systemd service file: {}", service_file.display()),
-            Err(_) => {
-                println!("Failed to create user systemd service file.");
-                process::exit(1);
-            }
-        },
-    }
-
+pub fn enable_service() {
     match process::Command::new("systemctl")
         .arg("--user")
         .arg("daemon-reload")
