@@ -1,4 +1,4 @@
-# mpris-discord-rpc
+# mpris-discord-rpc ![GitHub Release](https://img.shields.io/github/v/release/patryk-ku/mpris-discord-rpc?label=%20) ![License](https://img.shields.io/badge/MIT-blue) ![Rust](https://img.shields.io/badge/Rust-%23000000.svg?e&logo=rust&logoColor=white&color=CE412B) ![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)
 
 <p align="center">
 <img src=".github/assets/demo.png"/>
@@ -91,9 +91,15 @@ Alternatively, you can skip systemd and configure the binary to run on startup y
 
 ## Configuration and usage
 
-For the basic default usage just run it in the terminal:
+Use this command to start the service in the background and enable autostart. See the [Autostart](#autostart) section for more information.
 
+```sh
+mpris-discord-rpc enable
 ```
+
+Or just directly run it in the terminal:
+
+```sh
 mpris-discord-rpc
 ```
 
@@ -111,24 +117,45 @@ Commands:
   help     Print this message or the help of the given subcommand(s)
 
 Options:
-  -i, --interval <seconds>            Activity refresh rate (min 5, default 10)
-  -b, --button <name>                 Select visible buttons [possible values: yt, lastfm, listenbrainz, shamelessAd]
-      --lastfm-name <nickname>        Your Last.fm nickname
-      --listenbrainz-name <nickname>  Your Listenbrainz nickname
-  -s, --small-image <name>            Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
-  -l, --list-players                  Displays all available music player names and exits. Use to get your player name for -a argument
-  -a, --allowlist-add <Player Name>   Get status only from given player. Use multiple times to add several players
-      --hide-album-name               Hide album name
-  -d, --disable-cache                 Disable cache (not recommended)
-      --debug-log                     Show debug log
-      --reset-config                  Reset config file (overwrites the old file if exists)
-  -h, --help                          Print help
-  -V, --version                       Print version
+  -i, --interval <seconds>
+          Activity refresh rate (min 5, default 10)
+  -b, --button <name>
+          Select visible buttons [possible values: yt, lastfm, listenbrainz, mprisUrl, shamelessAd]
+      --lastfm-name <nickname>
+          Your Last.fm nickname
+      --listenbrainz-name <nickname>
+          Your Listenbrainz nickname
+  -s, --small-image <name>
+          Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
+      --force-player-id <player_id>
+          Force a different player id to be displayed than the one actually used
+      --force-player-name <player name>
+          Force a different player name to be displayed than the one actually used
+      --disable-mpris-art-url
+          Prevent MPRIS artUrl to be used as album cover if cover is not available on Last.fm
+  -l, --list-players
+          Displays all available music player names and exits. Use to get your player name for -a argument
+  -a, --allowlist-add <Player Name>
+          Get status only from given player. Use multiple times to add several players
+  -w, --video-players <Player Name>
+          Will use the "watching" activity. Use multiple times to add several players
+      --hide-album-name
+          Hide album name
+  -d, --disable-cache
+          Disable cache (not recommended)
+      --debug-log
+          Show debug log
+      --reset-config
+          Reset config file (overwrites the old file if exists)
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 ```
 
 ### Autostart
 
-The `enable` subcommand automatically creates a user-level systemd service, reloads the daemon, and enables the service,  `disable` will disable the service, and `restart` will restart it.
+The `enable` subcommand automatically reloads the systemd daemon and enables the service, `disable` will disable the service, and `restart` will restart it.
 
 You can check the service status with:
 
@@ -175,9 +202,52 @@ allowlist:
 
 Use the `-l`, `--list-players` to get your player name.
 
+### "Watching Video" activity
+
+You can mark players as video players using the `-w`,`--video-players` argument or `video_players` in the config file. Then the status will be "Watching Video" and the RPC will be more suitable for videos. This argument can be used multiple times to add more players.
+
+arguments:
+
+```sh
+mpris-discord-rpc -w "VLC Media Player" -w "Chrome" -w "Any other player"
+```
+
+config:
+
+```yaml
+video_players:
+  - "VLC Media Player"
+  - "Chrome"
+  - "Any other player"
+```
+
+It's also possible to display a thumbnail or cover of the video you're watching (e.g., from YouTube), but this requires a player that provides the URL via MPRIS. There aren't many players that do this natively, but `mpv` with the `mpv-mpris` plugin will share the thumbnail of a video piped to it from `yt-dlp`. Other custom YouTube players sometimes have similar functionality. Streaming apps like Jellyfin should work too. Additionally, Chromium-based browsers or Firefox (and forks) can achieve similar functionality using a browser extension.
+
+KDE Plasma:
+
+- Google Chrome, Chromium, and Vivaldi: https://chromewebstore.google.com/detail/plasma-integration/cimiefiiaegbelhefglklhhakcgmhkai
+- Mozilla Firefox: https://addons.mozilla.org/en-US/firefox/addon/plasma-integration/
+- Microsoft Edge: https://microsoftedge.microsoft.com/addons/detail/plasma-integration/dnnckbejblnejeabhcmhklcaljjpdjeh
+
+GNOME (not tested):
+
+- Google Chrome, Chromium, and Vivaldi: https://chromewebstore.google.com/detail/integracja-z-gnome-shell/gphhapmejobijbbhgpjhcjognlahblep
+- Mozilla Firefox: https://addons.mozilla.org/en-US/firefox/addon/gnome-shell-integration/
+
+> [!CAUTION]
+> Using this RPC with browser extensions can potentially compromise your privacy. Most videos played in the browser will be displayed as your activity, including content from sites like Instagram, FB, Twitter, etc. Even NSFW content might be displayed with thumbnails, which could result in a ban from Discord or removal from servers. You can disable thumbnail display using the `--disable-mpris-art-url` argument or by setting `disable_mpris_art_url` to true in the config file.
+
 ### Buttons
 
-You can choose from available options: `yt`, `lasfm`, `listenbrainz`, `shamelessAd` (max 2). Remember to provide your usernames for the services you want to add as buttons.
+You can choose from available options (max 2):
+
+- `yt` - Search this song on YouTube.
+- `lasfm` - Last.fm profile.
+- `listenbrainz` - Listenbrainz profile.
+- `mprisUrl` - Some custom YT players, Jellyfin, mpv or browsers with extension may provide a URL to the currently playing content (see the "Watching Video" activity section for more details). When available, a "Play Now" button will be displayed for music and a "Watch Now" button for video. If the URL is not available, this button will be replaced with a `yt` button.
+- `shamelessAd` - Link to the repository of this RPC.
+
+Remember to provide your usernames for the services you want to add as buttons.
 
 arguments:
 
@@ -216,9 +286,26 @@ config:
 small_image: player
 ```
 
-Available music player icons: `Amberol`, `Audacious`, `Elisa`, `GNOME Music`, `Google Chrome`, `Lollypop`, `Mozilla Firefox`, `Spotify`, `Strawberry`, `Tauon`, `VLC Media Player`, `Zen Browser`.
+Available music player icons: `Amberol`, `Audacious`, `Elisa`, `Firefox`, `GNOME Music`, `Google Chrome`, `Lollypop`, `Mozilla Firefox`, `mpv`, `Spotify`, `Strawberry`, `Tauon`, `TIDAL Hi-Fi`, `VLC Media Player`, `YouTube`, `Zen Browser`.
 
-Missing your player icon? Open an Issue with:
+You can also force a different player icon and name to be displayed than the one actually used.
+
+arguments:
+
+```sh
+mpris-discord-rpc --force-player-id "vlc_media_player" --force-player-name "VLC media player"
+```
+
+config:
+
+```yaml
+force_player_id: "vlc_media_player"
+force_player_name: "VLC media player"
+```
+
+Icons are available for these ids: `amberol`, `audacious`, `chrome`, `elisa`, `firefox`, `lollypop`, `mozilla_firefox`, `mozilla_zen`, `mpv`, `music`, `spotify`, `strawberry`, `tauon`, `tidalhifi`, `vlc_media_player`, `youtube`.
+
+**Missing your player icon?** Open an Issue with:
 
 - Icon link (png, min. 512x512 resolution - Discord requirement)
 - Player ID (obtainable by running with `--debug-log` parameter, search for the line with `[debug] player_id:`)

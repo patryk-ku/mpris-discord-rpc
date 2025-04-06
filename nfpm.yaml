@@ -1,0 +1,17 @@
+name: mpris-discord-rpc
+arch: amd64
+platform: linux
+version: "0.3.0"
+release: "1"
+section: default
+maintainer: "Patryk Kurdziel <patryk.kurdziel@protonmail.com>"
+description: |
+    Linux Discord rich presence for music, using MPRIS with album cover and progress bar support.
+homepage: https://github.com/patryk-ku/mpris-discord-rpc
+license: MIT
+
+contents:
+    - src: target/release/mpris-discord-rpc
+      dst: /usr/bin/mpris-discord-rpc
+    - src: ./mpris-discord-rpc.service
+      dst: /usr/lib/systemd/user/mpris-discord-rpc.service

@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Exec subcommands
     match settings.suboptions.command {
-        Some(settings::Commands::Enable {}) => utils::enable_service(&home_dir),
+        Some(settings::Commands::Enable {}) => utils::enable_service(),
         Some(settings::Commands::Disable {}) => utils::disable_service(),
         Some(settings::Commands::Restart {}) => utils::restart_service(),
         None => {}
@@ -62,6 +62,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         String::new()
     };
 
+    // Force player id and name
+    let force_player_name = settings.force_player_name.unwrap_or_default();
+    let force_player_id = settings.force_player_id.unwrap_or_default();
+
     // Enable/disable use of cache
     let mut cache_enabled: bool = !settings.disable_cache;
     if !home_exists {
@@ -84,7 +88,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut last_is_playing: bool = false;
 
     let mut _cover_url: String = "".to_string();
-    let mut is_first_time: bool = true;
+    let mut is_first_time_audio: bool = true;
+    let mut is_first_time_video: bool = true;
     let mut is_interrupted: bool = false;
     let mut is_activity_set: bool = false;
 
@@ -93,7 +98,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut player_notif: u8 = 0;
     let mut discord_notif: bool = false;
 
-    let mut client = DiscordIpcClient::new("1129859263741837373")?;
+    let mut client_audio = DiscordIpcClient::new("1129859263741837373")?;
+    let mut client_video = DiscordIpcClient::new("1356756023813210293")?;
+    let mut client: &mut DiscordIpcClient = &mut client_audio;
 
     // Set cache path
     let cache_dir = match env::var("XDG_CACHE_HOME") {
@@ -239,13 +246,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
-        let player_name = player.identity();
-        let player_id = utils::sanitize_name(player_name);
+        // Use video presence if player is in video_players list
+        let is_video_player = settings
+            .video_players
+            .iter()
+            .any(|player_name| player_name == &player.identity().to_string());
+        if is_video_player {
+            client = &mut client_video;
+            debug_log!(settings.debug_log, "Using video player presence");
+        } else {
+            client = &mut client_audio;
+            debug_log!(settings.debug_log, "Using audio player presence");
+        }
+
+        let player_name = if force_player_name.is_empty() {
+            player.identity().to_string()
+        } else {
+            force_player_name.to_string()
+        };
+        let player_id = if force_player_id.is_empty() {
+            utils::sanitize_name(&player_name)
+        } else {
+            force_player_id.to_string()
+        };
         debug_log!(settings.debug_log, "player_name: {}", player_name);
         debug_log!(settings.debug_log, "player_id: {}", player_id);
 
         // Connect with Discord
-        if is_first_time {
+        if (is_first_time_audio && !is_video_player) || (is_first_time_video && is_video_player) {
             match client.connect() {
                 Ok(_) => {
                     println!("Connected to Discord.");
@@ -260,7 +288,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     continue;
                 }
             };
-            is_first_time = false;
+            if is_video_player {
+                is_first_time_video = false;
+            } else {
+                is_first_time_audio = false;
+            }
         } else {
             match client.reconnect() {
                 Ok(_) => {
@@ -295,7 +327,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     break;
                 }
             };
-            // debug_log!(settings.debug_log, "{:#?}", metadata);
+            debug_log!(settings.debug_log, "{:#?}", metadata);
 
             let playback_status = match player.get_playback_status() {
                 Ok(status) => status,
@@ -324,8 +356,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if album.is_empty() {
                 album = "Unknown Album";
             }
-            let artist = metadata.artists().unwrap_or(vec!["Unknown Artist"])[0];
-            let mut album_artist = metadata.album_artists().unwrap_or(vec!["Unknown Artist"])[0];
+            let artist = match metadata.artists() {
+                Some(artists) => {
+                    if artists.is_empty() {
+                        "Unknown Artist"
+                    } else {
+                        artists[0]
+                    }
+                }
+                None => "Unknown Artist",
+            };
+            let mut album_artist = match metadata.album_artists() {
+                Some(artists) => {
+                    if artists.is_empty() {
+                        "Unknown Artist"
+                    } else {
+                        artists[0]
+                    }
+                }
+                None => "Unknown Artist",
+            };
             if album_artist.is_empty() || album_artist == "Unknown Artist" {
                 album_artist = artist;
             }
@@ -423,8 +473,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 album_artist,
                 LASTFM_API_KEY,
             );
-            let image: String = if _cover_url.is_empty() {
-                String::from("missing-cover")
+            let image: String = if _cover_url.is_empty() || _cover_url == "missing-cover" {
+                match metadata.art_url() {
+                    Some(url) => {
+                        if url.starts_with("http") && !settings.disable_mpris_art_url {
+                            url.to_string()
+                        } else {
+                            "missing-cover".to_string()
+                        }
+                    }
+                    _ => "missing-cover".to_string(),
+                }
             } else {
                 _cover_url.clone()
             };
@@ -455,7 +514,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             match small_image.as_str() {
-                "player" => assets = assets.small_image(&player_id).small_text(&player_name),
+                "player" => {
+                    if !settings.disable_mpris_art_url && image.contains("ytimg.com/") {
+                        assets = assets.small_image("youtube").small_text("YouTube")
+                    } else {
+                        assets = assets.small_image(&player_id).small_text(&player_name)
+                    }
+                }
                 "lastfmAvatar" => {
                     if !lastfm_avatar.is_empty() {
                         assets = assets
@@ -473,10 +538,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             let mut payload = activity::Activity::new()
-                .state(&artist)
                 .details(&title)
                 .assets(assets)
-                .activity_type(activity::ActivityType::Listening);
+                .activity_type(if is_video_player {
+                    activity::ActivityType::Watching
+                } else {
+                    activity::ActivityType::Listening
+                });
+
+            // Don't display Unknown Artist for videos
+            if !(is_video_player && artist == "by: Unknown Artist") {
+                payload = payload.state(&artist);
+            }
 
             payload = if is_track_position & (track_duration > 0) {
                 let time_end = time_start + track_duration;
@@ -508,6 +581,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "https://listenbrainz.org/user/{}/",
                 url_escape::encode_component(&listenbrainz_name)
             );
+            let mpris_url = match metadata.url() {
+                Some(url) => {
+                    let url_string = url.to_string();
+                    if url_string.starts_with("http://") || url_string.starts_with("https://") {
+                        url_string
+                    } else {
+                        String::new()
+                    }
+                }
+                _ => String::new(),
+            };
 
             // Add activity buttons
             let mut buttons = Vec::new();
@@ -543,6 +627,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 "Listenbrainz profile",
                                 &listenbrainz_url,
                             ));
+                        }
+                    }
+                    "mprisUrl" => {
+                        if mpris_url.is_empty() {
+                            // if mpris url is empty or not set convert button to yt button
+                            buttons.push(activity::Button::new(
+                                "Search this song on YouTube",
+                                &yt_url,
+                            ));
+                        } else {
+                            if is_video_player {
+                                buttons.push(activity::Button::new("Watch Now", &mpris_url));
+                            } else {
+                                buttons.push(activity::Button::new("Play Now", &mpris_url));
+                            }
                         }
                     }
                     "shamelessAd" => {

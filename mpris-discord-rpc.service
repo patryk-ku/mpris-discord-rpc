@@ -1,0 +1,13 @@
+[Unit]
+Description=Linux Discord rich presence for music, using MPRIS with album cover and progress bar support.
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/mpris-discord-rpc
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

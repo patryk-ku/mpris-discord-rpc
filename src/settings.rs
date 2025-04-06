@@ -18,7 +18,7 @@ pub struct Cli {
     pub interval: Option<u64>,
 
     /// Select visible buttons
-    #[arg(short, long, value_name = "name", value_parser = ["yt", "lastfm", "listenbrainz", "shamelessAd"])]
+    #[arg(short, long, value_name = "name", value_parser = ["yt", "lastfm", "listenbrainz", "mprisUrl", "shamelessAd"])]
     pub button: Vec<String>,
 
     /// Your Last.fm nickname
@@ -33,6 +33,18 @@ pub struct Cli {
     #[arg(short, long, value_name = "name", value_parser = ["playPause", "player", "lastfmAvatar", "none"])]
     pub small_image: Option<String>,
 
+    /// Force a different player id to be displayed than the one actually used
+    #[arg(long, value_name = "player_id", value_parser = clap::value_parser!(String))]
+    pub force_player_id: Option<String>,
+
+    /// Force a different player name to be displayed than the one actually used
+    #[arg(long, value_name = "player name", value_parser = clap::value_parser!(String))]
+    pub force_player_name: Option<String>,
+
+    /// Prevent MPRIS artUrl to be used as album cover if cover is not available on Last.fm
+    #[arg(long)]
+    pub disable_mpris_art_url: bool,
+
     /// Displays all available music player names and exits. Use to get your player name for -a argument
     #[arg(short, long)]
     #[serde(skip_deserializing)]
@@ -41,6 +53,10 @@ pub struct Cli {
     /// Get status only from given player. Use multiple times to add several players.
     #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", value_parser = clap::value_parser!(String))]
     pub allowlist: Vec<String>,
+
+    /// Will use the "watching" activity. Use multiple times to add several players.
+    #[arg(short = 'w', long = "video-players", value_name = "Player Name", value_parser = clap::value_parser!(String))]
+    pub video_players: Vec<String>,
 
     /// Hide album name
     #[arg(long)]
@@ -101,7 +117,7 @@ fn create_config_file(home_dir: &PathBuf, force: bool) -> (bool, PathBuf) {
 # Activity refresh rate in seconds (min 5)
 interval: 10
 
-# Select visible activity buttons (max 2) [possible values: yt, lastfm, listenbrainz, shamelessAd]
+# Select visible activity buttons (max 2) [possible values: yt, lastfm, listenbrainz, mprisUrl, shamelessAd]
 # button:
 #   - yt
 #   - lastfm
@@ -113,6 +129,15 @@ interval: 10
 # Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
 small_image: playPause
 
+# Force a different player id and name to be displayed than the one actually used. "force_player_id" changes icon and "force_player_name" changes displayed text while hovering over the icon.
+# List of available icons: https://github.com/patryk-ku/mpris-discord-rpc?tab=readme-ov-file#the-icon-next-to-the-album-cover
+# force_player_id: "custom_player_id"
+# force_player_name: "Custom Player Name"
+
+# Prevent MPRIS artUrl to be used as album cover if cover is not available on Last.fm. Mainly for working with thumbnails from YouTube and other video sites.
+# Additionally, it also disables icon and player name replacement on YouTube if it detects a YouTube thumbnail link.
+disable_mpris_art_url: false
+
 # Only use the status from the following music players
 # Use -l, --list-players to get player exact name to use with this option
 # The order matters and the first is the most important.
@@ -120,6 +145,12 @@ small_image: playPause
 #   - "VLC Media Player"
 #   - "Chrome"
 #   - "Any other player"
+
+# Will use the "watching" activity
+# Use -l, --list-players to get player exact name to use with this option
+# video_players:
+#   - "VLC Media Player"
+#   - "Chrome"
 
 # Hide the album name to decrease activity height
 hide_album_name: false
@@ -218,6 +249,18 @@ pub fn load_settings() -> Cli {
         config.small_image = args.small_image;
     }
 
+    if args.force_player_id != config.force_player_id && args.force_player_id.is_some() {
+        config.force_player_id = args.force_player_id;
+    }
+
+    if args.force_player_name != config.force_player_name && args.force_player_name.is_some() {
+        config.force_player_name = args.force_player_name;
+    }
+
+    if args.disable_mpris_art_url {
+        config.disable_mpris_art_url = args.disable_mpris_art_url;
+    }
+
     if args.hide_album_name {
         config.hide_album_name = args.hide_album_name;
     }
@@ -232,6 +275,10 @@ pub fn load_settings() -> Cli {
 
     if args.allowlist != config.allowlist && args.allowlist.len() > 0 {
         config.allowlist = args.allowlist;
+    }
+
+    if args.video_players != config.video_players && args.video_players.len() > 0 {
+        config.video_players = args.video_players;
     }
 
     if args.debug_log {
