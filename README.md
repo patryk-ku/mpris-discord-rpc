@@ -1,4 +1,4 @@
-# mpris-discord-rpc
+# mpris-discord-rpc ![GitHub Release](https://img.shields.io/github/v/release/patryk-ku/mpris-discord-rpc?label=%20) ![License](https://img.shields.io/badge/MIT-blue) ![Rust](https://img.shields.io/badge/Rust-%23000000.svg?e&logo=rust&logoColor=white&color=CE412B) ![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)
 
 <p align="center">
 <img src=".github/assets/demo.png"/>
@@ -91,9 +91,15 @@ Alternatively, you can skip systemd and configure the binary to run on startup y
 
 ## Configuration and usage
 
-For the basic default usage just run it in the terminal:
+Use this command to start the service in the background and enable autostart. See the [Autostart](#autostart) section for more information.
 
+```sh
+mpris-discord-rpc enable
 ```
+
+Or just directly run it in the terminal:
+
+```sh
 mpris-discord-rpc
 ```
 
