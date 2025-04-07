@@ -9,8 +9,8 @@ license=('MIT')
 arch=('x86_64')
 source=(
     "${pkgname}-v${pkgver}::${url}/releases/download/v${pkgver}/${pkgname}"
-    "https://raw.githubusercontent.com/patryk-ku/${pkgname}/main/mpris-discord-rpc.service"
-    "https://raw.githubusercontent.com/patryk-ku/${pkgname}/main/LICENSE"
+    "https://raw.githubusercontent.com/patryk-ku/${pkgname}/refs/tags/v${pkgver}/mpris-discord-rpc.service"
+    "https://raw.githubusercontent.com/patryk-ku/${pkgname}/refs/tags/v${pkgver}/LICENSE"
 )
 sha512sums=('SKIP' 'SKIP' 'SKIP')
 
