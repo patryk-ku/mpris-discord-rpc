@@ -9,13 +9,13 @@ license=('MIT')
 arch=('x86_64')
 source=(
     "${pkgname}-v${pkgver}::${url}/releases/download/v${pkgver}/${pkgname}"
-    "https://raw.githubusercontent.com/patryk-ku/${pkgname}/refs/tags/v${pkgver}/mpris-discord-rpc.service"
-    "https://raw.githubusercontent.com/patryk-ku/${pkgname}/refs/tags/v${pkgver}/LICENSE"
+    "mpris-discord-rpc-v${pkgver}.service::https://raw.githubusercontent.com/patryk-ku/${pkgname}/refs/tags/v${pkgver}/mpris-discord-rpc.service"
+    "LICENSE-v${pkgver}::https://raw.githubusercontent.com/patryk-ku/${pkgname}/refs/tags/v${pkgver}/LICENSE"
 )
 sha512sums=('SKIP' 'SKIP' 'SKIP')
 
 package() {
 	install -Dm755 "${pkgname}-v${pkgver}" "${pkgdir}/usr/bin/${pkgname}"
-	install -Dm644 mpris-discord-rpc.service "${pkgdir}/usr/lib/systemd/user/mpris-discord-rpc.service"
-	install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+	install -Dm644 "mpris-discord-rpc-v${pkgver}.service" "${pkgdir}/usr/lib/systemd/user/mpris-discord-rpc.service"
+	install -Dm644 "LICENSE-v${pkgver}" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }
