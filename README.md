@@ -61,10 +61,10 @@ sudo zypper install mpris-discord-rpc.rpm
 <details>
   <summary>Instructions</summary>
 
-Available in the [AUR](https://aur.archlinux.org/packages/mpris-discord-rpc). Install with your favorite AUR helper:
+Available in the [AUR](https://aur.archlinux.org/packages/mpris-discord-rpc-bin). Install with your favorite AUR helper:
 
 ```sh
-yay -S mpris-discord-rpc
+yay -S mpris-discord-rpc-bin
 ```
 
 </details>
