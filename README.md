@@ -84,7 +84,7 @@ cd /path/to/void-packages
 mkdir -p srcpkgs/mpris-discord-rpc
 # 3. Fetch template
 curl https://raw.githubusercontent.com/patryk-ku/mpris-discord-rpc/refs/heads/main/xbps/template > srcpkgs/mpris-discord-rpc/template
-# 4. And version checking pattern 
+# 4. And version checking pattern
 curl https://raw.githubusercontent.com/patryk-ku/mpris-discord-rpc/refs/heads/main/xbps/update > srcpkgs/mpris-discord-rpc/update
 # 5. Update checksum of mpris-discord-rpc with newest release
 xgensum -i mpris-discord-rpc
@@ -97,7 +97,7 @@ To update repeat the above steps. You can use `./xbps-src update-check mpris-dis
 
 See the [Intro](https://xbps-src-tutorials.github.io/) to or [Manual](https://github.com/void-linux/void-packages/blob/master/Manual.md) for `xbps-src` for details about how it builds and operates.
 
-Ping @JkktBkkt if you're experiencing an issue with building on Void. 
+Ping @JkktBkkt if you're experiencing an issue with building on Void.
 Note that officially supported platform is x86_64 on glibc only, the rest aren't tested.
 
 </details>
@@ -110,12 +110,17 @@ Note that officially supported platform is x86_64 on glibc only, the rest aren't
 Download the latest executable from the [Releases](https://github.com/patryk-ku/mpris-discord-rpc/releases) page (just a `mpris-discord-rpc` file) and grant execute permissions:
 
 ```sh
+curl -L -o mpris-discord-rpc 'https://github.com/patryk-ku/mpris-discord-rpc/releases/latest/download/mpris-discord-rpc'
 chmod +x mpris-discord-rpc
 ```
 
-You can now add the binary to your PATH or create an alias.  However, for the systemd service to function correctly after running `mpris-discord-rpc enable`, the file must be located at `/usr/bin/mpris-discord-rpc`.  Alternatively, you can modify the `ExecStart` path in the `~/.config/systemd/user/mpris-discord-rpc.service` file and restart the service with `mpris-discord-rpc restart`.
+This binary has no additional dependencies and should work on most distributions. So you can simply run the file in the terminal like this:
 
-Alternatively, you can skip systemd and configure the binary to run on startup yourself, depending on your specific distribution and desktop environment.
+```sh
+./mpris-discord-rpc
+```
+
+Now you can add the binary to your PATH or create an alias. Now the only thing left is to set it to launch automatically on startup. There are several ways to do that. If your distribution uses systemd, you can download a ready-to-use [mpris-discord-rpc.service](mpris-discord-rpc.service) file and save it to `~/.config/systemd/user/`. Then, edit the `ExecStart=/usr/bin/mpris-discord-rpc` line so it points to the location where you keep the binary. Once that's done, you can control the app's autostart behavior using the `enable`, `disable`, or `restart` subcommands. However, if your distribution doesn’t use systemd, you’ll need to create a service unit manually for your process manager. Alternatively, you can use [XDG Autostart](https://wiki.archlinux.org/title/XDG_Autostart) or configure it in your [desktop environment](https://wiki.archlinux.org/title/Autostarting#On_desktop_environment_startup) or [window manager’s](https://wiki.archlinux.org/title/Autostarting#On_window_manager_startup) config file, depending on what you’re using.
 
 </details>
 
@@ -347,13 +352,13 @@ Icons are managed through Discord Developer Portal, so no app update is needed a
 
 ### Flatpak Discord fix
 
-As flatpak applications are sandboxed this makes it difficult for any other programs to communicate with them. But this can be easily fixed using the following command:
+**This fix is likely no longer necessary**, as the application typically works with Flatpak Discord without any additional steps. However, if you experience issues with Discord not detecting the rich presence, you can try this solution:
 
 ```sh
 ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0
 ```
 
-**Unfortunately but it will need to be used every reboot**. So I would also recommend adding this command to the autostart.
+If you do need to use this fix, note that it will need to be done **every reboot**. So I would also recommend adding this command to the autostart.
 
 ## System usage
 
