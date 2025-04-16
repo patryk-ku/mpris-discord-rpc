@@ -1,0 +1,15 @@
+# Template file for 'mpris-discord-rpc'
+pkgname=mpris-discord-rpc
+version=0.3.0
+revision=1
+build_style=cargo
+short_desc="Discord rich presence for music, using MPRIS with album cover and progress bar support."
+maintainer="JkktBkkt <apkabikov@gmail.com>"
+license="MIT"
+makedepends="dbus-devel pkg-config openssl-devel"
+homepage="https://github.com/patryk-ku/mpris-discord-rpc"
+distfiles="https://github.com/patryk-ku/mpris-discord-rpc/archive/refs/tags/v${version}.tar.gz"
+checksum=badbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadb
+post_install() {
+        vlicense LICENSE
+}

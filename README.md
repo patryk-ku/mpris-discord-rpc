@@ -69,6 +69,39 @@ yay -S mpris-discord-rpc-bin
 
 </details>
 
+### Void
+
+<details>
+  <summary>Instructions</summary>
+
+This assumes using pre-cloned [xbps-src](https://github.com/void-linux/void-packages/) and installed [xtools](https://github.com/leahneukirchen/xtools) (shell helpers for xbps), available in official repos.
+If you don't want to build it locally, use the 'Other Distributions' option (below)
+
+```sh
+#1. Change directory to your local clone of void-packages repo
+cd /path/to/void-packages
+# 2. Create package template folder for mpris-discord-rpc
+mkdir -p srcpkgs/mpris-discord-rpc
+# 3. Fetch template
+curl https://raw.githubusercontent.com/patryk-ku/mpris-discord-rpc/refs/heads/main/xbps/template > srcpkgs/mpris-discord-rpc/template
+# 4. And version checking pattern 
+curl https://raw.githubusercontent.com/patryk-ku/mpris-discord-rpc/refs/heads/main/xbps/update > srcpkgs/mpris-discord-rpc/update
+# 5. Update checksum of mpris-discord-rpc with newest release
+xgensum -i mpris-discord-rpc
+# 6. Build and package
+./xbps-src pkg mpris-discord-rpc
+# 7. Install
+xi mpris-discord-rpc
+```
+To update repeat the above steps. You can use `./xbps-src update-check mpris-discord-rpc` to check for availability of new version(s).
+
+See the [Intro](https://xbps-src-tutorials.github.io/) to or [Manual](https://github.com/void-linux/void-packages/blob/master/Manual.md) for `xbps-src` for details about how it builds and operates.
+
+Ping @JkktBkkt if you're experiencing an issue with building on Void. 
+Note that officially supported platform is x86_64 on glibc only, the rest aren't tested.
+
+</details>
+
 ### Other Distributions
 
 <details>
