@@ -70,6 +70,10 @@ pub struct Cli {
     #[arg(long, value_name = "api_key", value_parser = clap::value_parser!(String))]
     pub lastfm_api_key: Option<String>,
 
+    /// Do not use Listenbrainz as a fallback source of album covers
+    #[arg(long)]
+    pub disable_listenbrainz_cover: bool,
+
     /// Show debug log
     #[arg(long)]
     #[serde(skip_deserializing)]
@@ -123,6 +127,9 @@ fn create_config_file(home_dir: &PathBuf, force: bool) -> (bool, PathBuf) {
 # You can easily get it from: https://www.last.fm/pl/api
 # lastfm_api_key: key_here
 
+# You can also disable Last.fm as a cover source by providing an empty string as the key.
+# lastfm_api_key: ""
+
 # Activity refresh rate in seconds (min 5)
 interval: 10
 
@@ -163,6 +170,9 @@ disable_mpris_art_url: false
 
 # Hide the album name to decrease activity height
 hide_album_name: false
+
+# Prevent Listenbrainz to be used as source of album cover if cover is not available on Last.fm
+disable_listenbrainz_cover: false
 
 # Disable cache (not recommended)
 disable_cache: false
@@ -266,8 +276,8 @@ pub fn load_settings() -> Cli {
         config.force_player_name = args.force_player_name;
     }
 
-    if args.disable_mpris_art_url {
-        config.disable_mpris_art_url = args.disable_mpris_art_url;
+    if args.disable_listenbrainz_cover {
+        config.disable_listenbrainz_cover = args.disable_listenbrainz_cover;
     }
 
     if args.hide_album_name {
@@ -292,6 +302,10 @@ pub fn load_settings() -> Cli {
 
     if args.lastfm_api_key != config.lastfm_api_key && args.lastfm_api_key.is_some() {
         config.lastfm_api_key = args.lastfm_api_key;
+    }
+
+    if args.disable_mpris_art_url {
+        config.disable_mpris_art_url = args.disable_mpris_art_url;
     }
 
     if args.debug_log {

@@ -4,7 +4,7 @@
 <img src=".github/assets/demo.png"/>
 </p>
 
-Linux Discord rich presence for music, using MPRIS with **album cover and progress bar support**. You can customize additional buttons, such as linking to your Last.fm profile or searching for the current song on YouTube. There's also an option to display either the music player's icon or your Last.fm avatar next to the album cover. The application is written in Rust.
+Linux Discord rich presence for music, using MPRIS with **album cover and progress bar support**. You can customize additional buttons, such as linking to your Last.fm profile or searching for the current song on YouTube. There's also an option to display either the music player's icon or your Last.fm avatar next to the album cover. Album covers are fetched from Last.fm, with Listenbrainz used as a fallback. The application is written in Rust.
 
 ## Supported players
 
@@ -181,6 +181,10 @@ Options:
           Hide album name
   -d, --disable-cache
           Disable cache (not recommended)
+      --lastfm-api-key <api_key>
+          Your Last.fm API key
+      --disable-listenbrainz-cover
+          Do not use Listenbrainz as a fallback source of album covers
       --debug-log
           Show debug log
       --reset-config

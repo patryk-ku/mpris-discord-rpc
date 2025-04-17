@@ -471,21 +471,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Err(_) => 0,
             };
 
-            // Fetch cover from last.fm
-            if lastfm_api_key.is_empty() {
-                _cover_url = "missing-cover".to_string()
-            } else {
-                _cover_url = utils::get_cover_url(
-                    &album_id,
-                    &last_album_id,
-                    album,
-                    _cover_url,
-                    cache_enabled,
-                    &mut album_cache,
-                    album_artist,
-                    &lastfm_api_key,
-                );
+            // Fetch album cover
+            if album_id != last_album_id {
+                if lastfm_api_key.is_empty() {
+                    _cover_url = "missing-cover".to_string()
+                } else {
+                    _cover_url = utils::get_cover_url(
+                        &album_id,
+                        album,
+                        _cover_url,
+                        cache_enabled,
+                        &mut album_cache,
+                        album_artist,
+                        &lastfm_api_key,
+                    );
+                }
+
+                // Use Musicbrainz cover if Last.fm fails
+                if !settings.disable_listenbrainz_cover {
+                    if _cover_url.is_empty() || _cover_url == "missing-cover" {
+                        _cover_url = utils::get_cover_url_musicbrainz(
+                            &album_id,
+                            album,
+                            _cover_url,
+                            cache_enabled,
+                            &mut album_cache,
+                            album_artist,
+                        );
+                    }
+                }
             }
+
             let image: String = if _cover_url.is_empty() || _cover_url == "missing-cover" {
                 match metadata.art_url() {
                     Some(url) => {
