@@ -369,21 +369,21 @@ If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-
 ## Compile from source
 
 1. Install Rust and Cargo using instructions from [Rust site](https://www.rust-lang.org/).
-2. Clone the repository
+2. Clone the repository.
    ```sh
    git clone 'https://github.com/patryk-ku/mpris-discord-rpc'
    cd mpris-discord-rpc
    ```
-3. Rename `.env.example` to `.env` and insert here your last.fm API key. You can easily get it [here](https://www.last.fm/pl/api).
+3. (Optional) Rename `.env.example` to `.env` and insert here your last.fm API key. You can easily get it [here](https://www.last.fm/pl/api). Do this if you want to embed the API key in the binary. If you don't, you can provide it later via argument or config file.
    ```sh
    mv .env.example .env
-   echo LASTFM_API_KEY=insert-key-here > .env
+   echo LASTFM_API_KEY=key_here > .env
    ```
-4. Compile executable using Cargo
+4. Compile executable using Cargo.
    ```sh
    cargo build --release
    ```
-5. The compiled executable file location is `target/release/mpris-discord-rpc`.
+5. The compiled executable file location is: `target/release/mpris-discord-rpc`.
 
 ## Changelog
 

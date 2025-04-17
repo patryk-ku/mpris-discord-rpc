@@ -1,5 +1,4 @@
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
-use dotenvy_macro::dotenv;
 use mpris::PlayerFinder;
 use pickledb::{PickleDb, PickleDbDumpPolicy, SerializationMethod};
 use url_escape;
@@ -14,10 +13,13 @@ use std::time::{Duration, SystemTime};
 mod settings;
 mod utils;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Load api key from .env file durning compilation
-    const LASTFM_API_KEY: &str = dotenv!("LASTFM_API_KEY");
+// Load api key from .env file durning compilation
+const LASTFM_API_KEY: &'static str = match option_env!("LASTFM_API_KEY") {
+    Some(key) => key,
+    None => "",
+};
 
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Set home path, If $HOME is not set, do not write or read anything from the user's disk
     let (home_exists, home_dir) = match env::var("HOME") {
         Ok(val) => (true, PathBuf::from(val)),
@@ -39,6 +41,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // User settings
+
+    // Use api key provided by user
+    let lastfm_api_key = settings.lastfm_api_key.unwrap_or(LASTFM_API_KEY.into());
+    if lastfm_api_key.is_empty() {
+        println!("\x1b[31mWARNING: Last.fm API key is not set. Album covers from Last.fm will not be available.\x1b[0m");
+    }
+
     // Main loop interval
     let mut interval = settings.interval.unwrap_or(10);
     if interval < 5 {
@@ -53,7 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let small_image = settings.small_image.unwrap_or(String::from("playPause"));
     let mut lastfm_avatar = String::new();
     if small_image == "lastfmAvatar" && !lastfm_name.is_empty() {
-        lastfm_avatar = utils::get_lastfm_avatar(&lastfm_name, LASTFM_API_KEY);
+        lastfm_avatar = utils::get_lastfm_avatar(&lastfm_name, &lastfm_api_key);
         debug_log!(settings.debug_log, "lastfm_avatar: {}", lastfm_avatar);
     }
     let lastfm_icon_text = if !lastfm_name.is_empty() {
@@ -463,16 +472,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             // Fetch cover from last.fm
-            _cover_url = utils::get_cover_url(
-                &album_id,
-                &last_album_id,
-                album,
-                _cover_url,
-                cache_enabled,
-                &mut album_cache,
-                album_artist,
-                LASTFM_API_KEY,
-            );
+            if lastfm_api_key.is_empty() {
+                _cover_url = "missing-cover".to_string()
+            } else {
+                _cover_url = utils::get_cover_url(
+                    &album_id,
+                    &last_album_id,
+                    album,
+                    _cover_url,
+                    cache_enabled,
+                    &mut album_cache,
+                    album_artist,
+                    &lastfm_api_key,
+                );
+            }
             let image: String = if _cover_url.is_empty() || _cover_url == "missing-cover" {
                 match metadata.art_url() {
                     Some(url) => {

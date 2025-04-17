@@ -1,3 +1,8 @@
+## v0.4.0
+
+- Added the ability to provide your own Last.fm API key via arguments and config file.
+- Providing a Last.fm API key during compilation is now optional.
+
 ## v0.3.0
 
 - If no album art is found on Last.fm, use the `artUrl` provided by MPRIS if it exists. This is especially useful for movies played in a browser, e.g., YouTube. If a YouTube thumbnail URL is detected, replace the player icon with the YouTube icon. This can be disabled with an argument or in the config.

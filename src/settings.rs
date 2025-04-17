@@ -66,6 +66,10 @@ pub struct Cli {
     #[arg(short, long)]
     pub disable_cache: bool,
 
+    /// Your Last.fm API key
+    #[arg(long, value_name = "api_key", value_parser = clap::value_parser!(String))]
+    pub lastfm_api_key: Option<String>,
+
     /// Show debug log
     #[arg(long)]
     #[serde(skip_deserializing)]
@@ -113,6 +117,11 @@ fn create_config_file(home_dir: &PathBuf, force: bool) -> (bool, PathBuf) {
 # mpris-discord-rpc --reset-config
 # Or you can manually copy the example config from repo:
 # https://github.com/patryk-ku/mpris-discord-rpc/blob/main/config.yaml
+
+# If you compiled binary by yourself, you may need to provide your Last.fm API key here.
+# Or if you use precompiled binary, you can override the default Last.fm API key.
+# You can easily get it from: https://www.last.fm/pl/api
+# lastfm_api_key: key_here
 
 # Activity refresh rate in seconds (min 5)
 interval: 10
@@ -279,6 +288,10 @@ pub fn load_settings() -> Cli {
 
     if args.video_players != config.video_players && args.video_players.len() > 0 {
         config.video_players = args.video_players;
+    }
+
+    if args.lastfm_api_key != config.lastfm_api_key && args.lastfm_api_key.is_some() {
+        config.lastfm_api_key = args.lastfm_api_key;
     }
 
     if args.debug_log {
