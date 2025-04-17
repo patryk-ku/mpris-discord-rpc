@@ -18,7 +18,6 @@ pickledb = "0.5.1"
 clap-serde-derive = "0.2.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
-dotenvy = "0.15.7"
 
 [profile.release]
 strip = true
