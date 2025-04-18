@@ -3,12 +3,12 @@ use clap_serde_derive::{
     serde::Serialize,
     ClapSerde,
 };
-use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::process;
 
 use crate::debug_log;
+use crate::utils::get_config_path;
 
 #[derive(Parser, ClapSerde, Serialize, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -117,9 +117,18 @@ pub enum Commands {
 }
 
 // Use to get config path, create new config or reset existing
-fn create_config_file(home_dir: &PathBuf, force: bool) -> (bool, PathBuf) {
-    let config_dir = home_dir.join(".config/mpris-discord-rpc");
-    let config_file = config_dir.join("config.yaml");
+fn create_config_file(force: bool) -> (bool, PathBuf) {
+    let mut config_file = match get_config_path() {
+        Some(path) => path,
+        None => {
+            println!("\x1b[31mWARNING: Failed to determine user config directory.\x1b[0m");
+            return (false, PathBuf::new());
+        }
+    };
+    config_file.push("mpris-discord-rpc");
+
+    let config_dir = config_file.clone();
+    config_file.push("config.yaml");
 
     if config_file.exists() && !force {
         return (true, config_file);
@@ -210,26 +219,17 @@ disable_cache: false
 
 // Used to get settings merged from args and config file
 pub fn load_settings() -> Cli {
-    let (home_exists, home_dir) = match env::var("HOME") {
-        Ok(val) => (true, PathBuf::from(val)),
-        Err(_) => (false, PathBuf::from("/")),
-    };
-
     let args = Cli::parse();
     debug_log!(args.debug_log, "Debug logs: enabled.");
     debug_log!(args.debug_log, "args: {:#?}", args);
 
     // Reset config file is user used --reset-config and exit
     if args.reset_config {
-        create_config_file(&home_dir, true);
+        create_config_file(true);
         process::exit(0);
     }
 
-    if !home_exists {
-        return args;
-    }
-
-    let (mut config_exists, config_file) = create_config_file(&home_dir, false);
+    let (mut config_exists, config_file) = create_config_file(false);
     if !config_exists {
         return args;
     }
