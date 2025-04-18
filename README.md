@@ -122,6 +122,8 @@ This binary has no additional dependencies and should work on most distributions
 
 You can add the binary to your PATH or create an alias. Now the only thing left is to set it to launch automatically on startup. There are several ways to do that. If your distribution uses systemd, you can download a ready-to-use [mpris-discord-rpc.service](mpris-discord-rpc.service) file and save it to `~/.config/systemd/user/`. Then, edit the `ExecStart=/usr/bin/mpris-discord-rpc` line so it points to the location where you keep the binary. Once that's done, you can control the app's autostart behavior using the `enable`, `disable`, or `restart` subcommands. However, if your distribution doesn’t use systemd, you’ll need to create a service unit manually for your process manager. Alternatively, you can use [XDG Autostart](https://wiki.archlinux.org/title/XDG_Autostart) or configure it in your [desktop environment](https://wiki.archlinux.org/title/Autostarting#On_desktop_environment_startup) or [window manager’s](https://wiki.archlinux.org/title/Autostarting#On_window_manager_startup) config file, depending on what you’re using. The command `mpris-discord-rpc enable --xdg` will create a `.desktop` file for XDG Autostart in `$XDG_CONFIG_HOME/autostart` for you. Feel free to customize it to fit your needs.
 
+If somehow the binary doesn't work on your distribution, there is also an `.AppImage` package available.
+
 </details>
 
 > [!NOTE]

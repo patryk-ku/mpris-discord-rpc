@@ -26,3 +26,16 @@ panic = "abort"
 
 [build-dependencies]
 dotenvy = "0.15.7"
+
+[package.metadata.appimage]
+auto_link = true
+auto_link_exclude_list = [
+	"libc.so*",
+	"libdl.so*",
+	"libpthread.so*",
+	"libm.so*",
+	"libgcc_s.so*",
+	"ld-linux*.so*",
+	"libsystemd.so*",
+	"libcap.so*",
+]
