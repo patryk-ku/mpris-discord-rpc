@@ -236,6 +236,8 @@ The application will generate a configuration file at `~/.config/mpris-discord-r
 
 After editing the file, run the `mpris-discord-rpc restart` command to reload the systemd service and apply the changes.
 
+Keep in mind that when using XDG Autostart, there's no built-in way to restart the service after changing the config. Config updates will only take effect after reboot. You can manually kill the process and restart it in the background as a workaround.
+
 ### Allowlist
 
 To select the music players, use the `-a`,`--allowlist-add` argument or `allowlist` in the config file. This argument can be used multiple times to add more players. The order matters and the first is the most important.
