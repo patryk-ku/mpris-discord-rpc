@@ -34,8 +34,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Exec subcommands
     match settings.suboptions.command {
-        Some(settings::Commands::Enable {}) => utils::enable_service(),
-        Some(settings::Commands::Disable {}) => utils::disable_service(),
+        Some(settings::Commands::Enable { xdg }) => {
+            if xdg {
+                utils::add_xdg_autostart()
+            } else {
+                utils::enable_service()
+            }
+        }
+        Some(settings::Commands::Disable { xdg }) => {
+            if xdg {
+                utils::remove_xdg_autostart()
+            } else {
+                utils::disable_service()
+            }
+        }
         Some(settings::Commands::Restart {}) => utils::restart_service(),
         None => {}
     }

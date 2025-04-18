@@ -99,9 +99,19 @@ pub struct SubConfig {
 #[derive(Subcommand, Debug, Serialize)]
 pub enum Commands {
     /// Start RPC in the background and enable autostart
-    Enable {},
+    Enable {
+        /// Use XDG Autostart instead of systemd
+        #[arg(long)]
+        #[serde(skip_deserializing)]
+        xdg: bool,
+    },
     /// Stop RPC and disable autostart
-    Disable {},
+    Disable {
+        /// Use XDG Autostart instead of systemd
+        #[arg(long)]
+        #[serde(skip_deserializing)]
+        xdg: bool,
+    },
     /// Use to restart the service and reload the changed configuration file.
     Restart {},
 }
