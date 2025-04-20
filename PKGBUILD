@@ -1,21 +1,22 @@
 # Maintainer: Patryk Kurdziel <patryk.kurdziel@protonmail.com>
 
-pkgname=mpris-discord-rpc
-pkgver=0.3.0
+_pkgname=mpris-discord-rpc
+pkgname="${_pkgname}-bin"
+pkgver=0.4.0
 pkgrel=1
 pkgdesc='Linux Discord rich presence for music, using MPRIS with album cover and progress bar support.'
-url="https://github.com/patryk-ku/${pkgname}"
+url="https://github.com/patryk-ku/${_pkgname}"
 license=('MIT')
 arch=('x86_64')
-source=(
-    "${pkgname}-v${pkgver}::${url}/releases/download/v${pkgver}/${pkgname}"
-    "https://raw.githubusercontent.com/patryk-ku/${pkgname}/refs/tags/v${pkgver}/mpris-discord-rpc.service"
-    "https://raw.githubusercontent.com/patryk-ku/${pkgname}/refs/tags/v${pkgver}/LICENSE"
-)
+provides=("${_pkgname}")
+conflicts=("${_pkgname}")
+source=("${_pkgname}-v${pkgver}::${url}/releases/download/v${pkgver}/${_pkgname}"
+        "${_pkgname}-v${pkgver}.service::https://raw.githubusercontent.com/patryk-ku/${_pkgname}/refs/tags/v${pkgver}/${_pkgname}.service"
+        "LICENSE-v${pkgver}::https://raw.githubusercontent.com/patryk-ku/${_pkgname}/refs/tags/v${pkgver}/LICENSE")
 sha512sums=('SKIP' 'SKIP' 'SKIP')
 
 package() {
-	install -Dm755 "${pkgname}-v${pkgver}" "${pkgdir}/usr/bin/${pkgname}"
-	install -Dm644 mpris-discord-rpc.service "${pkgdir}/usr/lib/systemd/user/mpris-discord-rpc.service"
-	install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+	install -Dm755 "${_pkgname}-v${pkgver}" "${pkgdir}/usr/bin/${_pkgname}"
+	install -Dm644 "${_pkgname}-v${pkgver}.service" "${pkgdir}/usr/lib/systemd/user/${_pkgname}.service"
+	install -Dm644 "LICENSE-v${pkgver}" "${pkgdir}/usr/share/licenses/${_pkgname}/LICENSE"
 }

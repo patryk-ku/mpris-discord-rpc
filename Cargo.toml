@@ -1,6 +1,6 @@
 [package]
 name = "mpris-discord-rpc"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 authors = ["Patryk Kurdziel <patryk.kurdziel@protonmail.com>"]
 description = "Linux Discord rich presence for music, using MPRIS with album cover and progress bar support."
@@ -14,7 +14,6 @@ reqwest = { version = "0.12", features = ["blocking", "json"] }
 url-escape = "0.1.1"
 serde_json = "1.0.140"
 clap = { version = "4.5.35", features = ["derive"] }
-dotenvy_macro = "0.15.7"
 pickledb = "0.5.1"
 clap-serde-derive = "0.2.1"
 serde = { version = "1.0.219", features = ["derive"] }
@@ -24,3 +23,19 @@ serde_yaml = "0.9.34"
 strip = true
 codegen-units = 1
 panic = "abort"
+
+[build-dependencies]
+dotenvy = "0.15.7"
+
+[package.metadata.appimage]
+auto_link = true
+auto_link_exclude_list = [
+	"libc.so*",
+	"libdl.so*",
+	"libpthread.so*",
+	"libm.so*",
+	"libgcc_s.so*",
+	"ld-linux*.so*",
+	"libsystemd.so*",
+	"libcap.so*",
+]

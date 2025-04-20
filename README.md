@@ -4,7 +4,7 @@
 <img src=".github/assets/demo.png"/>
 </p>
 
-Linux Discord rich presence for music, using MPRIS with **album cover and progress bar support**. You can customize additional buttons, such as linking to your Last.fm profile or searching for the current song on YouTube. There's also an option to display either the music player's icon or your Last.fm avatar next to the album cover. The application is written in Rust.
+Linux Discord rich presence for music, using MPRIS with **album cover and progress bar support**. You can customize additional buttons, such as linking to your Last.fm profile or searching for the current song on YouTube. There's also an option to display either the music player's icon or your Last.fm avatar next to the album cover. Album covers are fetched from Last.fm, with MusicBrainz used as a fallback. The application is written in Rust.
 
 ## Supported players
 
@@ -12,7 +12,7 @@ Any player or app with [MPRIS](https://wiki.archlinux.org/title/MPRIS) support. 
 
 ## Requirements
 
-Any fairly new 64-bit Linux distribution. It will probably also work on older versions of Linux but would have to be manually compiled on an older system. The optional background service and automatic startup capabilities rely on systemd.
+Any fairly new 64-bit Linux distribution. It will probably also work on older versions of Linux but would have to be manually compiled on an older system. The optional background service and automatic startup capabilities rely on systemd or XDG Autostart.
 
 ## Installation
 
@@ -61,11 +61,44 @@ sudo zypper install mpris-discord-rpc.rpm
 <details>
   <summary>Instructions</summary>
 
-Available in the [AUR](https://aur.archlinux.org/packages/mpris-discord-rpc). Install with your favorite AUR helper:
+Available in the [AUR](https://aur.archlinux.org/packages/mpris-discord-rpc-bin). Install with your favorite AUR helper:
 
 ```sh
-yay -S mpris-discord-rpc
+yay -S mpris-discord-rpc-bin
 ```
+
+</details>
+
+### Void
+
+<details>
+  <summary>Instructions</summary>
+
+This assumes using pre-cloned [xbps-src](https://github.com/void-linux/void-packages/) and installed [xtools](https://github.com/leahneukirchen/xtools) (shell helpers for xbps), available in official repos.
+If you don't want to build it locally, use the 'Other Distributions' option (below)
+
+```sh
+#1. Change directory to your local clone of void-packages repo
+cd /path/to/void-packages
+# 2. Create package template folder for mpris-discord-rpc
+mkdir -p srcpkgs/mpris-discord-rpc
+# 3. Fetch template
+curl https://raw.githubusercontent.com/patryk-ku/mpris-discord-rpc/refs/heads/main/xbps/template > srcpkgs/mpris-discord-rpc/template
+# 4. And version checking pattern
+curl https://raw.githubusercontent.com/patryk-ku/mpris-discord-rpc/refs/heads/main/xbps/update > srcpkgs/mpris-discord-rpc/update
+# 5. Update checksum of mpris-discord-rpc with newest release
+xgensum -i mpris-discord-rpc
+# 6. Build and package
+./xbps-src pkg mpris-discord-rpc
+# 7. Install
+xi mpris-discord-rpc
+```
+To update repeat the above steps. You can use `./xbps-src update-check mpris-discord-rpc` to check for availability of new version(s).
+
+See the [Intro](https://xbps-src-tutorials.github.io/) to or [Manual](https://github.com/void-linux/void-packages/blob/master/Manual.md) for `xbps-src` for details about how it builds and operates.
+
+Ping @JkktBkkt if you're experiencing an issue with building on Void.
+Note that officially supported platform is x86_64 on glibc only, the rest aren't tested.
 
 </details>
 
@@ -77,12 +110,19 @@ yay -S mpris-discord-rpc
 Download the latest executable from the [Releases](https://github.com/patryk-ku/mpris-discord-rpc/releases) page (just a `mpris-discord-rpc` file) and grant execute permissions:
 
 ```sh
+curl -L -o mpris-discord-rpc 'https://github.com/patryk-ku/mpris-discord-rpc/releases/latest/download/mpris-discord-rpc'
 chmod +x mpris-discord-rpc
 ```
 
-You can now add the binary to your PATH or create an alias.  However, for the systemd service to function correctly after running `mpris-discord-rpc enable`, the file must be located at `/usr/bin/mpris-discord-rpc`.  Alternatively, you can modify the `ExecStart` path in the `~/.config/systemd/user/mpris-discord-rpc.service` file and restart the service with `mpris-discord-rpc restart`.
+This binary has no additional dependencies and should work on most distributions. So you can simply run the file in the terminal like this:
 
-Alternatively, you can skip systemd and configure the binary to run on startup yourself, depending on your specific distribution and desktop environment.
+```sh
+./mpris-discord-rpc
+```
+
+You can add the binary to your PATH or create an alias. Now the only thing left is to set it to launch automatically on startup. There are several ways to do that. If your distribution uses systemd, you can download a ready-to-use [mpris-discord-rpc.service](mpris-discord-rpc.service) file and save it to `~/.config/systemd/user/`. Then, edit the `ExecStart=/usr/bin/mpris-discord-rpc` line so it points to the location where you keep the binary. Once that's done, you can control the app's autostart behavior using the `enable`, `disable`, or `restart` subcommands. However, if your distribution doesn’t use systemd, you’ll need to create a service unit manually for your process manager. Alternatively, you can use [XDG Autostart](https://wiki.archlinux.org/title/XDG_Autostart) or configure it in your [desktop environment](https://wiki.archlinux.org/title/Autostarting#On_desktop_environment_startup) or [window manager’s](https://wiki.archlinux.org/title/Autostarting#On_window_manager_startup) config file, depending on what you’re using. The command `mpris-discord-rpc enable --xdg` will create a `.desktop` file for XDG Autostart in `$XDG_CONFIG_HOME/autostart` for you. Feel free to customize it to fit your needs.
+
+If somehow the binary doesn't work on your distribution, there is also an `.AppImage` package available.
 
 </details>
 
@@ -143,6 +183,10 @@ Options:
           Hide album name
   -d, --disable-cache
           Disable cache (not recommended)
+      --lastfm-api-key <api_key>
+          Your Last.fm API key
+      --disable-musicbrainz-cover
+          Do not use MusicBrainz as a fallback source of album covers
       --debug-log
           Show debug log
       --reset-config
@@ -155,9 +199,22 @@ Options:
 
 ### Autostart
 
+There are 2 built-in ways to autostart this app: systemd and XDG Autostart:
+
+```sh
+# Systemd distributions (Ubuntu, Fedora, Arch, etc)
+mpris-discord-rpc enable
+
+# XDG Autostart for distrubutions without systemd (Void and others)
+mpris-discord-rpc enable --xdg
+
+```
+
 The `enable` subcommand automatically reloads the systemd daemon and enables the service, `disable` will disable the service, and `restart` will restart it.
 
-You can check the service status with:
+The `--xdg` flag is available for the `enable` and `disable` subcommands and creates/removes a `.desktop` file from `$XDG_CONFIG_HOME/autostart` instead.
+
+With systemd you can check the service status with:
 
 ```sh
 systemctl --user status mpris-discord-rpc.service
@@ -180,6 +237,8 @@ journalctl --user -u mpris-discord-rpc.service -f
 The application will generate a configuration file at `~/.config/mpris-discord-rpc/config.yaml` when you run it for the first time. You can reset or regenerate it with `--reset-config`. You can also check default config file here: [config.yaml](config.yaml).
 
 After editing the file, run the `mpris-discord-rpc restart` command to reload the systemd service and apply the changes.
+
+Keep in mind that when using XDG Autostart, there's no built-in way to restart the service after changing the config. Config updates will only take effect after reboot. You can manually kill the process and restart it in the background as a workaround.
 
 ### Allowlist
 
@@ -286,7 +345,7 @@ config:
 small_image: player
 ```
 
-Available music player icons: `Amberol`, `Audacious`, `Elisa`, `Firefox`, `GNOME Music`, `Google Chrome`, `Lollypop`, `Mozilla Firefox`, `mpv`, `Spotify`, `Strawberry`, `Tauon`, `TIDAL Hi-Fi`, `VLC Media Player`, `YouTube`, `Zen Browser`.
+Available music player icons: `Amberol`, `Audacious`, `Elisa`, `Firefox`, `fooyin`, `GNOME Music`, `Google Chrome`, `Lollypop`, `Mozilla Firefox`, `mpv`, `Spotify`, `Strawberry`, `Tauon`, `TIDAL Hi-Fi`, `VLC Media Player`, `YouTube`, `Zen Browser`.
 
 You can also force a different player icon and name to be displayed than the one actually used.
 
@@ -303,7 +362,7 @@ force_player_id: "vlc_media_player"
 force_player_name: "VLC media player"
 ```
 
-Icons are available for these ids: `amberol`, `audacious`, `chrome`, `elisa`, `firefox`, `lollypop`, `mozilla_firefox`, `mozilla_zen`, `mpv`, `music`, `spotify`, `strawberry`, `tauon`, `tidalhifi`, `vlc_media_player`, `youtube`.
+Icons are available for these ids: `amberol`, `audacious`, `chrome`, `elisa`, `firefox`, `fooyin`, `lollypop`, `mozilla_firefox`, `mozilla_zen`, `mpv`, `music`, `spotify`, `strawberry`, `tauon`, `tidalhifi`, `vlc_media_player`, `youtube`.
 
 **Missing your player icon?** Open an Issue with:
 
@@ -314,13 +373,13 @@ Icons are managed through Discord Developer Portal, so no app update is needed a
 
 ### Flatpak Discord fix
 
-As flatpak applications are sandboxed this makes it difficult for any other programs to communicate with them. But this can be easily fixed using the following command:
+**This fix is likely no longer necessary**, as the application typically works with Flatpak Discord without any additional steps. However, if you experience issues with Discord not detecting the rich presence, you can try this solution:
 
 ```sh
 ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0
 ```
 
-**Unfortunately but it will need to be used every reboot**. So I would also recommend adding this command to the autostart.
+If you do need to use this fix, note that it will need to be done **every reboot**. So I would also recommend adding this command to the autostart.
 
 ## System usage
 
@@ -331,21 +390,21 @@ If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-
 ## Compile from source
 
 1. Install Rust and Cargo using instructions from [Rust site](https://www.rust-lang.org/).
-2. Clone the repository
+2. Clone the repository.
    ```sh
    git clone 'https://github.com/patryk-ku/mpris-discord-rpc'
    cd mpris-discord-rpc
    ```
-3. Rename `.env.example` to `.env` and insert here your last.fm API key. You can easily get it [here](https://www.last.fm/pl/api).
+3. (Optional) Rename `.env.example` to `.env` and insert here your last.fm API key. You can easily get it [here](https://www.last.fm/pl/api). Do this if you want to embed the API key in the binary. If you don't, you can provide it later via argument or config file.
    ```sh
    mv .env.example .env
-   echo LASTFM_API_KEY=insert-key-here > .env
+   echo LASTFM_API_KEY=key_here > .env
    ```
-4. Compile executable using Cargo
+4. Compile executable using Cargo.
    ```sh
    cargo build --release
    ```
-5. The compiled executable file location is `target/release/mpris-discord-rpc`.
+5. The compiled executable file location is: `target/release/mpris-discord-rpc`.
 
 ## Changelog
 

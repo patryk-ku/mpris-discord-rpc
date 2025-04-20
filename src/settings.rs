@@ -3,12 +3,12 @@ use clap_serde_derive::{
     serde::Serialize,
     ClapSerde,
 };
-use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::process;
 
 use crate::debug_log;
+use crate::utils::get_config_path;
 
 #[derive(Parser, ClapSerde, Serialize, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -66,6 +66,14 @@ pub struct Cli {
     #[arg(short, long)]
     pub disable_cache: bool,
 
+    /// Your Last.fm API key
+    #[arg(long, value_name = "api_key", value_parser = clap::value_parser!(String))]
+    pub lastfm_api_key: Option<String>,
+
+    /// Do not use MusicBrainz as a fallback source of album covers
+    #[arg(long)]
+    pub disable_musicbrainz_cover: bool,
+
     /// Show debug log
     #[arg(long)]
     #[serde(skip_deserializing)]
@@ -91,17 +99,36 @@ pub struct SubConfig {
 #[derive(Subcommand, Debug, Serialize)]
 pub enum Commands {
     /// Start RPC in the background and enable autostart
-    Enable {},
+    Enable {
+        /// Use XDG Autostart instead of systemd
+        #[arg(long)]
+        #[serde(skip_deserializing)]
+        xdg: bool,
+    },
     /// Stop RPC and disable autostart
-    Disable {},
+    Disable {
+        /// Use XDG Autostart instead of systemd
+        #[arg(long)]
+        #[serde(skip_deserializing)]
+        xdg: bool,
+    },
     /// Use to restart the service and reload the changed configuration file.
     Restart {},
 }
 
 // Use to get config path, create new config or reset existing
-fn create_config_file(home_dir: &PathBuf, force: bool) -> (bool, PathBuf) {
-    let config_dir = home_dir.join(".config/mpris-discord-rpc");
-    let config_file = config_dir.join("config.yaml");
+fn create_config_file(force: bool) -> (bool, PathBuf) {
+    let mut config_file = match get_config_path() {
+        Some(path) => path,
+        None => {
+            println!("\x1b[31mWARNING: Failed to determine user config directory.\x1b[0m");
+            return (false, PathBuf::new());
+        }
+    };
+    config_file.push("mpris-discord-rpc");
+
+    let config_dir = config_file.clone();
+    config_file.push("config.yaml");
 
     if config_file.exists() && !force {
         return (true, config_file);
@@ -113,6 +140,14 @@ fn create_config_file(home_dir: &PathBuf, force: bool) -> (bool, PathBuf) {
 # mpris-discord-rpc --reset-config
 # Or you can manually copy the example config from repo:
 # https://github.com/patryk-ku/mpris-discord-rpc/blob/main/config.yaml
+
+# If you compiled binary by yourself, you may need to provide your Last.fm API key here.
+# Or if you use precompiled binary, you can override the default Last.fm API key.
+# You can easily get it from: https://www.last.fm/pl/api
+# lastfm_api_key: key_here
+
+# You can also disable Last.fm as a cover source by providing an empty string as the key.
+# lastfm_api_key: ""
 
 # Activity refresh rate in seconds (min 5)
 interval: 10
@@ -155,6 +190,9 @@ disable_mpris_art_url: false
 # Hide the album name to decrease activity height
 hide_album_name: false
 
+# Prevent MusicBrainz to be used as source of album cover if cover is not available on Last.fm
+disable_musicbrainz_cover: false
+
 # Disable cache (not recommended)
 disable_cache: false
 "#;
@@ -181,26 +219,17 @@ disable_cache: false
 
 // Used to get settings merged from args and config file
 pub fn load_settings() -> Cli {
-    let (home_exists, home_dir) = match env::var("HOME") {
-        Ok(val) => (true, PathBuf::from(val)),
-        Err(_) => (false, PathBuf::from("/")),
-    };
-
     let args = Cli::parse();
     debug_log!(args.debug_log, "Debug logs: enabled.");
     debug_log!(args.debug_log, "args: {:#?}", args);
 
     // Reset config file is user used --reset-config and exit
     if args.reset_config {
-        create_config_file(&home_dir, true);
+        create_config_file(true);
         process::exit(0);
     }
 
-    if !home_exists {
-        return args;
-    }
-
-    let (mut config_exists, config_file) = create_config_file(&home_dir, false);
+    let (mut config_exists, config_file) = create_config_file(false);
     if !config_exists {
         return args;
     }
@@ -257,8 +286,8 @@ pub fn load_settings() -> Cli {
         config.force_player_name = args.force_player_name;
     }
 
-    if args.disable_mpris_art_url {
-        config.disable_mpris_art_url = args.disable_mpris_art_url;
+    if args.disable_musicbrainz_cover {
+        config.disable_musicbrainz_cover = args.disable_musicbrainz_cover;
     }
 
     if args.hide_album_name {
@@ -279,6 +308,14 @@ pub fn load_settings() -> Cli {
 
     if args.video_players != config.video_players && args.video_players.len() > 0 {
         config.video_players = args.video_players;
+    }
+
+    if args.lastfm_api_key != config.lastfm_api_key && args.lastfm_api_key.is_some() {
+        config.lastfm_api_key = args.lastfm_api_key;
+    }
+
+    if args.disable_mpris_art_url {
+        config.disable_mpris_art_url = args.disable_mpris_art_url;
     }
 
     if args.debug_log {

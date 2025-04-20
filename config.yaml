@@ -5,6 +5,14 @@
 # Or you can manually copy the example config from repo:
 # https://github.com/patryk-ku/mpris-discord-rpc/blob/main/config.yaml
 
+# If you compiled binary by yourself, you may need to provide your Last.fm API key here.
+# Or if you use precompiled binary, you can override the default Last.fm API key.
+# You can easily get it from: https://www.last.fm/pl/api
+# lastfm_api_key: key_here
+
+# You can also disable Last.fm as a cover source by providing an empty string as the key.
+# lastfm_api_key: ""
+
 # Activity refresh rate in seconds (min 5)
 interval: 10
 
@@ -45,6 +53,9 @@ disable_mpris_art_url: false
 
 # Hide the album name to decrease activity height
 hide_album_name: false
+
+# Prevent MusicBrainz to be used as source of album cover if cover is not available on Last.fm
+disable_musicbrainz_cover: false
 
 # Disable cache (not recommended)
 disable_cache: false
