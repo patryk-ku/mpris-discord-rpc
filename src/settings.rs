@@ -70,9 +70,9 @@ pub struct Cli {
     #[arg(long, value_name = "api_key", value_parser = clap::value_parser!(String))]
     pub lastfm_api_key: Option<String>,
 
-    /// Do not use Listenbrainz as a fallback source of album covers
+    /// Do not use MusicBrainz as a fallback source of album covers
     #[arg(long)]
-    pub disable_listenbrainz_cover: bool,
+    pub disable_musicbrainz_cover: bool,
 
     /// Show debug log
     #[arg(long)]
@@ -190,8 +190,8 @@ disable_mpris_art_url: false
 # Hide the album name to decrease activity height
 hide_album_name: false
 
-# Prevent Listenbrainz to be used as source of album cover if cover is not available on Last.fm
-disable_listenbrainz_cover: false
+# Prevent MusicBrainz to be used as source of album cover if cover is not available on Last.fm
+disable_musicbrainz_cover: false
 
 # Disable cache (not recommended)
 disable_cache: false
@@ -286,8 +286,8 @@ pub fn load_settings() -> Cli {
         config.force_player_name = args.force_player_name;
     }
 
-    if args.disable_listenbrainz_cover {
-        config.disable_listenbrainz_cover = args.disable_listenbrainz_cover;
+    if args.disable_musicbrainz_cover {
+        config.disable_musicbrainz_cover = args.disable_musicbrainz_cover;
     }
 
     if args.hide_album_name {

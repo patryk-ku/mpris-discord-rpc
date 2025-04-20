@@ -352,7 +352,7 @@ pub fn get_cover_url_musicbrainz(
     if !url.is_empty() && (url.len() > 5) {
         url.pop();
         url.remove(0);
-        println!("[listenbrainz] fetched image link: {}", url);
+        println!("[musicbrainz] fetched image link: {}", url);
 
         // Save cover url to cache
         if cache_enabled {

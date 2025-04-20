@@ -500,7 +500,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 // Use Musicbrainz cover if Last.fm fails
-                if !settings.disable_listenbrainz_cover {
+                if !settings.disable_musicbrainz_cover {
                     if _cover_url.is_empty() || _cover_url == "missing-cover" {
                         _cover_url = utils::get_cover_url_musicbrainz(
                             &album_id,

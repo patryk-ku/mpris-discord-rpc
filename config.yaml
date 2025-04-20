@@ -54,8 +54,8 @@ disable_mpris_art_url: false
 # Hide the album name to decrease activity height
 hide_album_name: false
 
-# Prevent Listenbrainz to be used as source of album cover if cover is not available on Last.fm
-disable_listenbrainz_cover: false
+# Prevent MusicBrainz to be used as source of album cover if cover is not available on Last.fm
+disable_musicbrainz_cover: false
 
 # Disable cache (not recommended)
 disable_cache: false
