@@ -452,7 +452,7 @@ mpris-discord-rpc restart
 </details>
 
 <details>
-	<summary>There is no icon for my music player/video player/streaming service, etc.</summary>
+  <summary>There is no icon for my music player/video player/streaming service, etc.</summary>
 
 Open an Issue with:
 - Icon link (png, min. 512x512 resolution - Discord requirement)
@@ -461,7 +461,7 @@ Open an Issue with:
 </details>
 
 <details>
-	<summary>How are new player icons added without releasing a new binary?</summary>
+  <summary>How are new player icons added without releasing a new binary?</summary>
 
 Icons are managed through Discord Developer Portal, so no app update is needed after adding new ones. See [here](https://github.com/patryk-ku/mpris-discord-rpc/issues/29#issuecomment-2936507734).
 
