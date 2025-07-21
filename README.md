@@ -431,7 +431,7 @@ However, Discord has recently started granting more permissions for custom RPC, 
 <details>
   <summary>An incorrect album image is being displayed.</summary>
 
-MusicBrainz often returns incorrect images, but it is only used if finding a cover on Last.fm fails. So, you can either disable MusicBrainz as a cover source in the configuration and wait for someone to upload the correct album cover to Last.fm, or you can upload it yourself.
+MusicBrainz often returns incorrect images, but it is only used if finding a cover on Last.fm fails. So, you can either disable MusicBrainz as a cover source in the config and wait for someone to upload the correct album cover to Last.fm, or you can upload it yourself.
 
 Then, clear the album cache.
 
