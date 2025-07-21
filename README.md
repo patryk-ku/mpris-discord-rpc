@@ -410,6 +410,77 @@ If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-
 
 [CHANGELOG.md](CHANGELOG.md)
 
+## FAQ
+
+<details>
+  <summary>Can I Use local image files for RPC cover art instead of Last.fm/MusicBrainz?</summary>
+
+No. It's not possible to use local images for Discord RPC, only URLs to images available on the internet are supported by Discord for now. That's why I have to use cover arts from Last.fm and MusicBrainz.
+
+</details>
+
+<details>
+  <summary>“Listening to $title” instead of “Listening to Music”? </summary>
+
+The name that appears after "Listening to/Playing/Watching" is the application name set in the Discord Developer Portal, and unfortunately, it's currently not possible to change it dynamically based on the song title. I even had to create a second application there just for the video status and set up a separate RPC connection, because otherwise it would show "Watching Music" for videos. It would definitely be a cool feature, but for now, only Spotify has that capability.
+
+However, Discord has recently started granting more permissions for custom RPC, like using images from URLs, changing activity type, and even updating the progress bar, none of which were possible two years ago. So maybe in the future they'll allow this too, and if they do, I'll definitely implement it.
+
+</details>
+
+<details>
+  <summary>An incorrect album image is being displayed.</summary>
+
+MusicBrainz often returns incorrect images, but it is only used if finding a cover on Last.fm fails. So, you can either disable MusicBrainz as a cover source in the configuration and wait for someone to upload the correct album cover to Last.fm, or you can upload it yourself.
+
+Then, clear the album cache.
+
+</details>
+
+<details>
+  <summary>How to clear album cache?</summary>
+
+If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-rpc/` or `$HOME/.cache/mpris-discord-rpc/`. Just delete file inside this directory and restart service.
+
+For most users, the following commands should work:
+
+```sh
+rm ~/.cache/mpris-discord-rpc/album_cache.db
+mpris-discord-rpc restart
+```
+
+</details>
+
+<details>
+	<summary>There is no icon for my music player/video player/streaming service, etc.</summary>
+
+Open an Issue with:
+- Icon link (png, min. 512x512 resolution - Discord requirement)
+- Player ID (obtainable by running with --debug-log parameter, search for the line with `[debug] player_id:`)
+
+</details>
+
+<details>
+	<summary>How are new player icons added without releasing a new binary?</summary>
+
+Icons are managed through Discord Developer Portal, so no app update is needed after adding new ones. See [here](https://github.com/patryk-ku/mpris-discord-rpc/issues/29#issuecomment-2936507734).
+
+</details>
+
+<details>
+  <summary>Can you create a package for my Linux distribution?</summary>
+
+Of course! If you're willing to help, feel free to open a new Issue so we can work together on adding it.
+
+</details>
+
+<details>
+  <summary>I have an idea for a feature.</summary>
+
+Feel free to open a new Issue and share your idea! I'm generally open to adding new features, and we can discuss what is possible to implement.
+
+</details>
+
 ## Credits
 
 I wouldn't have been able to create this without two fantastic crates: [mpris-rs](https://github.com/Mange/mpris-rs) and [discord-rich-presence](https://github.com/vionya/discord-rich-presence). Implementing these features myself would have been beyond my current skills. A huge thank you to their creators.
