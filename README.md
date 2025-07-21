@@ -456,7 +456,7 @@ mpris-discord-rpc restart
 
 Open an Issue with:
 - Icon link (png, min. 512x512 resolution - Discord requirement)
-- Player ID (obtainable by running with --debug-log parameter, search for the line with `[debug] player_id:`)
+- Player ID (obtainable by running with `--debug-log` parameter, search for the line with `[debug] player_id:`)
 
 </details>
 
