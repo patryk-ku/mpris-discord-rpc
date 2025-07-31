@@ -8,7 +8,7 @@ repository = "https://github.com/patryk-ku/mpris-discord-rpc"
 license = "MIT"
 
 [dependencies]
-discord-rich-presence = "0.2.5"
+discord-rich-presence = { git = "https://github.com/kawaiiDango/discord-rich-presence", branch = "main" }
 mpris = "2.0.1"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 url-escape = "0.1.1"

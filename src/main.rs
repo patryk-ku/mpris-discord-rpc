@@ -119,8 +119,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut player_notif: u8 = 0;
     let mut discord_notif: bool = false;
 
-    let mut client_audio = DiscordIpcClient::new("1129859263741837373")?;
-    let mut client_video = DiscordIpcClient::new("1356756023813210293")?;
+    let mut client_audio = DiscordIpcClient::new("1129859263741837373");
+    let mut client_video = DiscordIpcClient::new("1356756023813210293");
     let mut client: &mut DiscordIpcClient = &mut client_audio;
 
     // Set cache path
