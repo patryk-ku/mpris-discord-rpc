@@ -158,15 +158,17 @@ Commands:
 
 Options:
   -i, --interval <seconds>
-          Activity refresh rate (min 5, default 10)
+          Activity refresh rate (min: 5, default: 10)
   -b, --button <name>
           Select visible buttons [possible values: yt, lastfm, listenbrainz, mprisUrl, shamelessAd]
       --lastfm-name <nickname>
           Your Last.fm nickname
       --listenbrainz-name <nickname>
           Your Listenbrainz nickname
+  -r, --rpc-name <value>
+          Select what will be displayed after "Listening to" (default: artist) [possible values: artist, track, none]
   -s, --small-image <name>
-          Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
+          Select the icon displayed next to the album cover (default: playPause) [possible values: playPause, player, lastfmAvatar, none]
       --force-player-id <player_id>
           Force a different player id to be displayed than the one actually used
       --force-player-name <player name>
@@ -296,6 +298,30 @@ GNOME (not tested):
 > [!CAUTION]
 > Using this RPC with browser extensions can potentially compromise your privacy. Most videos played in the browser will be displayed as your activity, including content from sites like Instagram, FB, Twitter, etc. Even NSFW content might be displayed with thumbnails, which could result in a ban from Discord or removal from servers. You can disable thumbnail display using the `--disable-mpris-art-url` argument or by setting `disable_mpris_art_url` to true in the config file.
 
+### "Listening to ..."
+
+You can choose what shows up after "Listening to" on the Discord user list: artist name, song title, or just "Music" (default: artist).
+
+arguments:
+
+```sh
+mpris-discord-rpc -r artist
+```
+
+config:
+
+```yaml
+rpc_name: artist
+```
+
+example:
+
+| value     | displayed RPC                                     |
+| --------- | ------------------------------------------------- |
+| `artist`  | Listening to **Rick Astley**                      |
+| `track`   | Listening to **Never Gonna Give You Up**          |
+| `none`    | Listening to **Music**                            |
+
 ### Buttons
 
 You can choose from available options (max 2):
@@ -416,15 +442,6 @@ If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-
   <summary>Can I Use local image files for RPC cover art instead of Last.fm/MusicBrainz?</summary>
 
 No. It's not possible to use local images for Discord RPC, only URLs to images available on the internet are supported by Discord for now. That's why I have to use cover arts from Last.fm and MusicBrainz.
-
-</details>
-
-<details>
-  <summary>“Listening to $title” instead of “Listening to Music”? </summary>
-
-The name that appears after "Listening to/Playing/Watching" is the application name set in the Discord Developer Portal, and unfortunately, it's currently not possible to change it dynamically based on the song title. I even had to create a second application there just for the video status and set up a separate RPC connection, because otherwise it would show "Watching Music" for videos. It would definitely be a cool feature, but for now, only Spotify has that capability.
-
-However, Discord has recently started granting more permissions for custom RPC, like using images from URLs, changing activity type, and even updating the progress bar, none of which were possible two years ago. So maybe in the future they'll allow this too, and if they do, I'll definitely implement it.
 
 </details>
 

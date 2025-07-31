@@ -234,7 +234,7 @@ pub fn get_cover_url(
             String::new()
         };
 
-        if (!cache_url.is_empty()) & (cache_url.len() > 5) {
+        if (!cache_url.is_empty()) && (cache_url.len() > 5) {
             return String::from(cache_url);
         }
     }
@@ -303,7 +303,7 @@ pub fn get_cover_url_musicbrainz(
             String::new()
         };
 
-        if (!cache_url.is_empty()) & (cache_url.len() > 5) {
+        if (!cache_url.is_empty()) && (cache_url.len() > 5) {
             return String::from(cache_url);
         }
     }

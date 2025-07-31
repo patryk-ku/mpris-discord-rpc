@@ -13,7 +13,7 @@ use crate::utils::get_config_path;
 #[derive(Parser, ClapSerde, Serialize, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    /// Activity refresh rate (min 5, default 10)
+    /// Activity refresh rate (min: 5, default: 10)
     #[arg(short, long, value_name = "seconds", value_parser = clap::value_parser!(u64).range(5..))]
     pub interval: Option<u64>,
 
@@ -29,7 +29,11 @@ pub struct Cli {
     #[arg(long, value_name = "nickname", value_parser = clap::value_parser!(String))]
     pub listenbrainz_name: Option<String>,
 
-    /// Select the icon displayed next to the album cover (default playPause)
+    /// Select what will be displayed after "Listening to" (default: artist)
+    #[arg(short, long, value_name = "value", value_parser = ["artist", "track", "none"])]
+    pub rpc_name: Option<String>,
+
+    /// Select the icon displayed next to the album cover (default: playPause)
     #[arg(short, long, value_name = "name", value_parser = ["playPause", "player", "lastfmAvatar", "none"])]
     pub small_image: Option<String>,
 
@@ -165,6 +169,9 @@ interval: 10
 # lastfm_name: "nickname"
 # listenbrainz_name: "nickname"
 
+# Select what will be displayed after "Listening to" (default: artist) [possible values: artist, track, none]
+# rpc_name: artist
+
 # Select the icon displayed next to the album cover (default playPause) [possible values: playPause, player, lastfmAvatar, none]
 small_image: playPause
 
@@ -276,6 +283,10 @@ pub fn load_settings() -> Cli {
 
     if args.listenbrainz_name != config.listenbrainz_name && args.listenbrainz_name.is_some() {
         config.listenbrainz_name = args.listenbrainz_name;
+    }
+
+    if args.rpc_name != config.rpc_name && args.rpc_name.is_some() {
+        config.rpc_name = args.rpc_name;
     }
 
     if args.small_image != config.small_image && args.small_image.is_some() {
