@@ -1,6 +1,6 @@
 # Template file for 'mpris-discord-rpc'
 pkgname=mpris-discord-rpc
-version=0.4.0
+version=0.5.0
 revision=1
 build_style=cargo
 short_desc="Discord rich presence for music, using MPRIS with album cover and progress bar support."

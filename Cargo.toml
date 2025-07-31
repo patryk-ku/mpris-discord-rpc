@@ -1,6 +1,6 @@
 [package]
 name = "mpris-discord-rpc"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["Patryk Kurdziel <patryk.kurdziel@protonmail.com>"]
 description = "Linux Discord rich presence for music, using MPRIS with album cover and progress bar support."
@@ -8,12 +8,12 @@ repository = "https://github.com/patryk-ku/mpris-discord-rpc"
 license = "MIT"
 
 [dependencies]
-discord-rich-presence = "0.2.5"
+discord-rich-presence = { git = "https://github.com/kawaiiDango/discord-rich-presence", branch = "main" }
 mpris = "2.0.1"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 url-escape = "0.1.1"
-serde_json = "1.0.140"
-clap = { version = "4.5.35", features = ["derive"] }
+serde_json = "1.0.141"
+clap = { version = "4.5.42", features = ["derive"] }
 pickledb = "0.5.1"
 clap-serde-derive = "0.2.1"
 serde = { version = "1.0.219", features = ["derive"] }
