@@ -62,6 +62,10 @@ pub struct Cli {
     #[arg(long)]
     pub hide_album_name: bool,
 
+    /// Only send activity when media is playing
+    #[arg(long)]
+    pub only_when_playing: bool,
+
     /// Disable cache (not recommended)
     #[arg(short, long)]
     pub disable_cache: bool,
