@@ -1,3 +1,4 @@
+use discord_rich_presence::activity::StatusDisplayType;
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use mpris::PlayerFinder;
 use pickledb::{PickleDb, PickleDbDumpPolicy, SerializationMethod};
@@ -71,6 +72,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let lastfm_name = settings.lastfm_name.unwrap_or_default();
     let listenbrainz_name = settings.listenbrainz_name.unwrap_or_default();
 
+    // "Listening to ..."
+    let rpc_name = settings.rpc_name.unwrap_or(String::from("artist"));
+
+    // Icon displayed next to the album cover
     let small_image = settings.small_image.unwrap_or(String::from("playPause"));
     let mut lastfm_avatar = String::new();
     if small_image == "lastfmAvatar" && !lastfm_name.is_empty() {
@@ -403,9 +408,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let album_id = format!("{} - {}", album_artist, album);
 
             // If all metadata values are unknown then break
-            if (artist == "Unknown Artist")
-                & (album == "Unknown Album")
-                & (title == "Unknown Title")
+            if (artist.to_lowercase() == "unknown artist")
+                && (album.to_lowercase() == "unknown artist")
+                && (title.to_lowercase() == "unknown artist")
             {
                 debug_log!(settings.debug_log, "Unknown metadata, skipping...");
                 sleep(Duration::from_secs(interval));
@@ -467,7 +472,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             last_track_position = track_position; // update it before loop continue
             debug_log!(settings.debug_log, "metadata_changed: {}", metadata_changed);
 
-            if !metadata_changed & !is_interrupted {
+            if !metadata_changed && !is_interrupted {
                 debug_log!(
                     settings.debug_log,
                     "The same metadata and status, skipping..."
@@ -539,8 +544,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Set activity
             let song_name: String = format!("{artist} - {title}");
-            let title = format!("{} ", title); // Discord activity min 2 char len bug fix
-            let artist = format!("by: {}", artist);
+            let title = if title.len() > 1 {
+                String::from(title)
+            } else {
+                format!("{} ", title) // Discord activity min 2 char len bug fix
+            };
+            let artist = match rpc_name.as_str() {
+                "artist" => {
+                    if artist.len() > 1 {
+                        String::from(artist)
+                    } else {
+                        format!("{} ", artist) // Discord activity min 2 char len bug fix
+                    }
+                }
+                _ => format!("by: {}", artist),
+            };
             let album = format!("album: {}", album);
             let status_text: String = if is_playing {
                 "playing".to_string()
@@ -554,6 +572,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assets = assets.large_text(&album);
             }
 
+            // Icon displayed next to the album cover
             match small_image.as_str() {
                 "player" => {
                     if !settings.disable_mpris_art_url && image.contains("ytimg.com/") {
@@ -587,12 +606,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     activity::ActivityType::Listening
                 });
 
+            // "Listening to ..."
+            match rpc_name.as_str() {
+                "none" => payload = payload.status_display_type(StatusDisplayType::Name),
+                "track" => payload = payload.status_display_type(StatusDisplayType::Details),
+                "artist" | _ => payload = payload.status_display_type(StatusDisplayType::State),
+            }
+
             // Don't display Unknown Artist for videos
-            if !(is_video_player && artist == "by: Unknown Artist") {
+            if !(is_video_player && (artist.to_lowercase() == "by: unknown artist")
+                || artist.to_lowercase() == "unknown artist")
+            {
                 payload = payload.state(&artist);
             }
 
-            payload = if is_track_position & (track_duration > 0) {
+            payload = if is_track_position && (track_duration > 0) {
                 let time_end = time_start + track_duration;
                 if is_playing {
                     payload.timestamps(
@@ -633,6 +661,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 _ => String::new(),
             };
+
+            // Add YouTube URL to song title
+            payload = payload.details_url(&yt_url);
 
             // Add activity buttons
             let mut buttons = Vec::new();
