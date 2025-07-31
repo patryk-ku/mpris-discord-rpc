@@ -1,6 +1,6 @@
 [package]
 name = "mpris-discord-rpc"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["Patryk Kurdziel <patryk.kurdziel@protonmail.com>"]
 description = "Linux Discord rich presence for music, using MPRIS with album cover and progress bar support."
