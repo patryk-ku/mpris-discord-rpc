@@ -183,6 +183,8 @@ Options:
           Will use the "watching" activity. Use multiple times to add several players
       --hide-album-name
           Hide album name
+      --only-when-playing
+          Only send activity when media is playing
   -d, --disable-cache
           Disable cache (not recommended)
       --lastfm-api-key <api_key>

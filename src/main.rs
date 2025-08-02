@@ -369,12 +369,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 mpris::PlaybackStatus::Paused => false,
                 mpris::PlaybackStatus::Stopped => false,
             };
-            // println!("{:#?}", playback_status);
             debug_log!(
                 settings.debug_log,
                 "playback_status: {:#?}",
                 playback_status
             );
+
+            if settings.only_when_playing && !is_playing {
+                is_interrupted = true;
+                utils::clear_activity(&mut is_activity_set, client);
+                sleep(Duration::from_secs(interval));
+                continue;
+            }
 
             // Parse metadata
             let title = metadata.title().unwrap_or("Unknown Title");

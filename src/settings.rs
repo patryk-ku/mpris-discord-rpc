@@ -66,6 +66,10 @@ pub struct Cli {
     #[arg(long)]
     pub hide_album_name: bool,
 
+    /// Only send activity when media is playing
+    #[arg(long)]
+    pub only_when_playing: bool,
+
     /// Disable cache (not recommended)
     #[arg(short, long)]
     pub disable_cache: bool,
@@ -197,6 +201,9 @@ disable_mpris_art_url: false
 # Hide the album name to decrease activity height
 hide_album_name: false
 
+# Only send activity when media is playing
+only_when_playing: false
+
 # Prevent MusicBrainz to be used as source of album cover if cover is not available on Last.fm
 disable_musicbrainz_cover: false
 
@@ -303,6 +310,10 @@ pub fn load_settings() -> Cli {
 
     if args.hide_album_name {
         config.hide_album_name = args.hide_album_name;
+    }
+
+    if args.only_when_playing {
+        config.only_when_playing = args.only_when_playing;
     }
 
     if args.disable_cache {
