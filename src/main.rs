@@ -369,7 +369,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 mpris::PlaybackStatus::Paused => false,
                 mpris::PlaybackStatus::Stopped => false,
             };
-            // println!("{:#?}", playback_status);
             debug_log!(
                 settings.debug_log,
                 "playback_status: {:#?}",
@@ -382,6 +381,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 sleep(Duration::from_secs(interval));
                 continue;
             }
+
             // Parse metadata
             let title = metadata.title().unwrap_or("Unknown Title");
             let mut album = metadata.album_name().unwrap_or("Unknown Album");
