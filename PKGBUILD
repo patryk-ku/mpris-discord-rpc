@@ -2,7 +2,7 @@
 
 _pkgname=mpris-discord-rpc
 pkgname="${_pkgname}-bin"
-pkgver=0.5.0
+pkgver=0.5.1
 pkgrel=1
 pkgdesc='Linux Discord rich presence for music, using MPRIS with album cover and progress bar support.'
 url="https://github.com/patryk-ku/${_pkgname}"
