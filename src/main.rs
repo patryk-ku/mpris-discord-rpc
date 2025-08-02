@@ -376,6 +376,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 playback_status
             );
 
+            if settings.only_when_playing && !is_playing {
+                is_interrupted = true;
+                utils::clear_activity(&mut is_activity_set, client);
+                sleep(Duration::from_secs(interval));
+                continue;
+            }
             // Parse metadata
             let title = metadata.title().unwrap_or("Unknown Title");
             let mut album = metadata.album_name().unwrap_or("Unknown Album");
