@@ -23,9 +23,10 @@ pub struct MediaInfo {
     pub duration: u64,
     pub position: u64,
     pub is_track_position: bool,
-    pub player_id: String,
     pub art_url: String, // Link to cover art on the internet
     pub url: String,     // Link to the currently playing media on the internet
+    #[cfg(target_os = "macos")]
+    pub player_id: String,
 }
 
 // Use a Result to handle potential errors, like no media playing.
@@ -515,8 +516,6 @@ pub fn get_currently_playing(player: &Player, debug_log: bool) -> NowPlayingResu
         _ => String::new(),
     };
 
-    let player_id = String::new(); // needed only on macOS
-
     Ok(MediaInfo {
         title,
         artist,
@@ -526,7 +525,6 @@ pub fn get_currently_playing(player: &Player, debug_log: bool) -> NowPlayingResu
         duration,
         position,
         is_track_position,
-        player_id,
         art_url,
         url,
     })
