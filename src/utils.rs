@@ -27,6 +27,8 @@ pub struct MediaInfo {
     pub url: String,     // Link to the currently playing media on the internet
     #[cfg(target_os = "macos")]
     pub player_id: String,
+    #[cfg(target_os = "macos")]
+    pub player_name: String,
 }
 
 // Use a Result to handle potential errors, like no media playing.
@@ -531,7 +533,7 @@ pub fn get_currently_playing(player: &Player, debug_log: bool) -> NowPlayingResu
 }
 
 #[cfg(target_os = "macos")]
-pub fn get_currently_playing(debug_log: bool) -> NowPlayingResult {
+pub fn get_currently_playing() -> NowPlayingResult {
     // PREREQUISITE: You must install this tool first!
     // ==> brew install media-control
     use std::process::Command;
@@ -540,16 +542,10 @@ pub fn get_currently_playing(debug_log: bool) -> NowPlayingResult {
 
     match output {
         Ok(output) => {
-            if !output.status.success() {
-                let error_message = String::from_utf8_lossy(&output.stdout);
-                if error_message.contains("null") {
-                    return Err("No media is currently playing.".into());
-                }
-                return Err(format!("'media-control' failed: {}", error_message).into());
-            }
-
             let result_str = String::from_utf8(output.stdout)?;
-            debug_log!(debug_log, "{:#?}", result_str);
+            if result_str.eq("null\n") {
+                return Err("No media is currently playing. Waiting for any player...".into());
+            }
             let json_result: serde_json::Value = serde_json::from_str(&result_str)?;
 
             let title = json_result["title"]
@@ -572,7 +568,7 @@ pub fn get_currently_playing(debug_log: bool) -> NowPlayingResult {
                 .as_str()
                 .unwrap_or("Unknown Player")
                 .to_string();
-            let player_id = player_id
+            let player_name = player_id
                 .split('.')
                 .last()
                 .unwrap_or("Unknown Player")
@@ -590,9 +586,10 @@ pub fn get_currently_playing(debug_log: bool) -> NowPlayingResult {
                 duration,
                 position,
                 is_track_position,
-                player_id,
                 art_url,
                 url,
+                player_id,
+                player_name,
             })
         }
         Err(e) => {

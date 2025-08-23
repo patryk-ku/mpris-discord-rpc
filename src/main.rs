@@ -230,7 +230,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             #[cfg(target_os = "macos")]
-            println!("Displaying the list of players is not supported on macOS.");
+            {
+                println!("");
+                println!("Displaying the list of players is not supported on macOS.");
+                println!("However, it's possible to show the ID of the currently detected player.");
+
+                match utils::get_currently_playing() {
+                    Ok(player) => {
+                        println!("Player ID: {}", player.player_id);
+                        println!("");
+                        println!(
+                            "You can use this ID together with the -a flag to add this player to the allowlist:"
+                        );
+                        println!(r#" mpris-discord-rpc -a "{}""#, player.player_id);
+                        println!("");
+                        println!("You can use the -a argument multiple times to add more than one player to the allowlist:");
+                        println!(
+                            r#" mpris-discord-rpc -a "{}" -a "Second Player" -a "Any other player""#,
+                            player.player_id
+                        );
+                    }
+                    Err(_) => {
+                        println!("No player detected.");
+                    }
+                };
+            }
 
             return Ok(());
         }
@@ -286,26 +310,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // On macOS use media info fetching function to determine if anything is playing now
         #[cfg(target_os = "macos")]
-        let player = match utils::get_currently_playing(settings.debug_log) {
+        let player = match utils::get_currently_playing() {
             Ok(player) => {
-                // TODO: add allowlist support
+                if allowlist_enabled {
+                    let mut is_player_on_allowlist = false;
+                    for allowlist_entry in &settings.allowlist {
+                        if *allowlist_entry == player.player_id {
+                            is_player_on_allowlist = true;
+                            break;
+                        }
+                    }
+                    if !is_player_on_allowlist {
+                        if player_notif != 2 {
+                            println!(
+                            	"Could not find any active player from your allowlist. Waiting for any player from your allowlist..."
+                            );
+                            player_notif = 2;
+                            discord_notif = false;
+                        }
+
+                        is_interrupted = true;
+                        utils::clear_activity(&mut is_activity_set, &mut client);
+                        sleep(Duration::from_secs(interval));
+                        continue;
+                    }
+                }
+
                 if player_notif != 1 {
                     println!("Found active player using media-control.");
                     player_notif = 1;
                 }
                 player
             }
-            Err(_) => {
+            Err(e) => {
                 if player_notif != 2 {
-                    if allowlist_enabled {
-                        println!(
-                            "Could not find any active player from your allowlist. Waiting for any player from your allowlist..."
-                        );
-                    } else {
-                        println!(
-                            "Could not find any player using media-control. Waiting for any player..."
-                        );
-                    }
+                    println!("{}", e);
 
                     player_notif = 2;
                     discord_notif = false;
@@ -321,7 +360,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(target_os = "linux")]
         let player_identity = player.identity().to_string();
         #[cfg(target_os = "macos")]
-        let player_identity = player.player_id;
+        let player_identity = player.player_name;
 
         // Use video presence if player is in video_players list
         let is_video_player = settings
@@ -407,7 +446,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             };
             #[cfg(target_os = "macos")]
-            let media_info = match utils::get_currently_playing(settings.debug_log) {
+            let media_info = match utils::get_currently_playing() {
                 Ok(metadata) => metadata,
                 Err(err) => {
                     println!("Could not get metadata from player: {}", err);
