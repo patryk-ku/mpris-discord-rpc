@@ -6,6 +6,31 @@ use reqwest::header::USER_AGENT;
 use serde_json;
 use std::{env, fs, process};
 
+#[cfg(target_os = "linux")]
+use mpris::Player;
+#[cfg(target_os = "linux")]
+use std::time::Duration;
+
+// A common struct to hold song information, ensuring a consistent
+// return type regardless of the platform.
+#[derive(Debug)]
+pub struct MediaInfo {
+    pub title: String,
+    pub artist: String,
+    pub album_artist: String,
+    pub album: String,
+    pub is_playing: bool,
+    pub duration: u64,
+    pub position: u64,
+    pub is_track_position: bool,
+    pub player_id: String,
+    pub art_url: String, // Link to cover art on the internet
+    pub url: String,     // Link to the currently playing media on the internet
+}
+
+// Use a Result to handle potential errors, like no media playing.
+type NowPlayingResult = Result<MediaInfo, Box<dyn std::error::Error>>;
+
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 // Use to print debug log if enabled with argument
@@ -406,4 +431,178 @@ pub fn sanitize_name(input: &str) -> String {
         .chars()
         .filter(|c| c.is_alphanumeric() || *c == '_')
         .collect()
+}
+
+#[cfg(target_os = "linux")]
+pub fn get_currently_playing(player: &Player, debug_log: bool) -> NowPlayingResult {
+    let metadata = match player.get_metadata() {
+        Ok(metadata) => metadata,
+        Err(err) => return Err(format!("Could not get metadata from player: {}", err).into()),
+    };
+    debug_log!(debug_log, "{:#?}", metadata);
+
+    let playback_status = match player.get_playback_status() {
+        Ok(status) => status,
+        Err(err) => {
+            return Err(format!("Could not get playback status from player: {}", err).into())
+        }
+    };
+
+    let is_playing: bool = match playback_status {
+        mpris::PlaybackStatus::Playing => true,
+        mpris::PlaybackStatus::Paused => false,
+        mpris::PlaybackStatus::Stopped => false,
+    };
+    debug_log!(debug_log, "playback_status: {:#?}", playback_status);
+
+    // Parse metadata
+    let title = metadata.title().unwrap_or("Unknown Title").to_string();
+    let mut album = metadata.album_name().unwrap_or("Unknown Album").to_string();
+    if album.is_empty() {
+        album = "Unknown Album".to_string();
+    }
+    let artist = match metadata.artists() {
+        Some(artists) => {
+            if artists.is_empty() {
+                "Unknown Artist".to_string()
+            } else {
+                artists[0].to_string()
+            }
+        }
+        None => "Unknown Artist".to_string(),
+    };
+    let mut album_artist = match metadata.album_artists() {
+        Some(artists) => {
+            if artists.is_empty() {
+                "Unknown Artist".to_string()
+            } else {
+                artists[0].to_string()
+            }
+        }
+        None => "Unknown Artist".to_string(),
+    };
+    if album_artist.is_empty() || album_artist == "Unknown Artist" {
+        album_artist = artist.clone();
+    }
+
+    // Get track duration if supported by player else return 0
+    let duration = metadata.length().unwrap_or(Duration::new(0, 0)).as_secs();
+
+    // Get track position if supported by player else return 0 secs
+    let mut is_track_position: bool = false;
+    let position = match player.get_position() {
+        Ok(position) => {
+            is_track_position = true;
+            position.as_secs()
+        }
+        Err(_) => Duration::new(0, 0).as_secs(),
+    };
+
+    let art_url = match metadata.art_url() {
+        Some(url) => url.to_string(),
+        _ => String::new(),
+    };
+
+    let url = match metadata.url() {
+        Some(url) => {
+            let url_string = url.to_string();
+            if url_string.starts_with("http://") || url_string.starts_with("https://") {
+                url_string
+            } else {
+                String::new()
+            }
+        }
+        _ => String::new(),
+    };
+
+    let player_id = String::new(); // needed only on macOS
+
+    Ok(MediaInfo {
+        title,
+        artist,
+        album_artist,
+        album,
+        is_playing,
+        duration,
+        position,
+        is_track_position,
+        player_id,
+        art_url,
+        url,
+    })
+}
+
+#[cfg(target_os = "macos")]
+pub fn get_currently_playing(debug_log: bool) -> NowPlayingResult {
+    // PREREQUISITE: You must install this tool first!
+    // ==> brew install media-control
+    use std::process::Command;
+
+    let output = Command::new("media-control").args(["get"]).output();
+
+    match output {
+        Ok(output) => {
+            if !output.status.success() {
+                let error_message = String::from_utf8_lossy(&output.stdout);
+                if error_message.contains("null") {
+                    return Err("No media is currently playing.".into());
+                }
+                return Err(format!("'media-control' failed: {}", error_message).into());
+            }
+
+            let result_str = String::from_utf8(output.stdout)?;
+            debug_log!(debug_log, "{:#?}", result_str);
+            let json_result: serde_json::Value = serde_json::from_str(&result_str)?;
+
+            let title = json_result["title"]
+                .as_str()
+                .unwrap_or("Unknown Title")
+                .to_string();
+            let artist = json_result["artist"]
+                .as_str()
+                .unwrap_or("Unknown Artist")
+                .to_string();
+            let album = json_result["album"]
+                .as_str()
+                .unwrap_or("Unknown Album")
+                .to_string();
+            let album_artist = artist.clone(); // Assuming album artist is the same as artist
+            let is_playing = json_result["playing"].as_bool().unwrap_or(false);
+            let duration = json_result["duration"].as_u64().unwrap_or(0);
+            let position = json_result["elapsedTime"].as_u64().unwrap_or(0);
+            let player_id = json_result["bundleIdentifier"]
+                .as_str()
+                .unwrap_or("Unknown Player")
+                .to_string();
+            let player_id = player_id
+                .split('.')
+                .last()
+                .unwrap_or("Unknown Player")
+                .to_string(); // eg. org.videolan.vlc => vlc
+            let art_url = String::new(); // For now cant get artwork remote url like with mpris
+            let is_track_position = true;
+            let url = String::new();
+
+            Ok(MediaInfo {
+                title,
+                artist,
+                album_artist,
+                album,
+                is_playing,
+                duration,
+                position,
+                is_track_position,
+                player_id,
+                art_url,
+                url,
+            })
+        }
+        Err(e) => {
+            // This error usually means media-control is not installed or not in PATH.
+            Err(format!(
+                "Failed to execute 'media-control'. Is it installed? (brew install media-control) Error: {}",
+                e
+            ).into())
+        }
+    }
 }
