@@ -72,6 +72,7 @@ jobs:
               if: runner.os == 'macOS'
               run: |
                   tar -czf target/release/${{ matrix.target }}.tar.gz -C target/release mpris-discord-rpc
+                  rm target/release/mpris-discord-rpc
 
             - name: Upload binaries and packages
               uses: actions/upload-artifact@v4
