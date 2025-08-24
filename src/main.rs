@@ -36,6 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     debug_log!(settings.debug_log, "home_dir: {}", home_dir.display());
 
     // Exec subcommands
+    #[cfg(target_os = "linux")]
     match settings.suboptions.command {
         Some(settings::Commands::Enable { xdg }) => {
             if xdg {
@@ -52,6 +53,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         Some(settings::Commands::Restart {}) => utils::restart_service(),
+        None => {}
+    }
+    #[cfg(target_os = "macos")]
+    match settings.suboptions.command {
+        Some(_) => {
+            println!("Subcommands to manage the daemon are not available on macOS.");
+            std::process::exit(0);
+        }
         None => {}
     }
 

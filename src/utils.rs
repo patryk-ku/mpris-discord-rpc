@@ -4,12 +4,14 @@ use reqwest;
 use reqwest::blocking::Client;
 use reqwest::header::USER_AGENT;
 use serde_json;
-use std::{env, fs, process};
+use std::env;
 
 #[cfg(target_os = "linux")]
 use mpris::Player;
 #[cfg(target_os = "linux")]
 use std::time::Duration;
+#[cfg(target_os = "linux")]
+use std::{fs, process};
 
 // A common struct to hold song information, ensuring a consistent
 // return type regardless of the platform.
@@ -46,6 +48,7 @@ macro_rules! debug_log {
     };
 }
 
+#[cfg(target_os = "linux")]
 fn is_systemd_present() {
     match process::Command::new("ps")
         .arg("-p")
@@ -73,6 +76,7 @@ fn is_systemd_present() {
     println!("Use the \x1b[32;1m--xdg\x1b[0m flag with the subcommands like this: \x1b[32;1mmpris-discord-rpc enable --xdg\x1b[0m.");
 }
 
+#[cfg(target_os = "linux")]
 pub fn enable_service() {
     match process::Command::new("systemctl")
         .arg("--user")
@@ -105,6 +109,7 @@ pub fn enable_service() {
     process::exit(0);
 }
 
+#[cfg(target_os = "linux")]
 pub fn disable_service() {
     match process::Command::new("systemctl")
         .arg("--user")
@@ -124,6 +129,7 @@ pub fn disable_service() {
     process::exit(0);
 }
 
+#[cfg(target_os = "linux")]
 pub fn restart_service() {
     match process::Command::new("systemctl")
         .arg("--user")
@@ -152,6 +158,7 @@ pub fn get_config_path() -> Option<std::path::PathBuf> {
     }
 }
 
+#[cfg(target_os = "linux")]
 pub fn add_xdg_autostart() {
     let mut desktopt_file_path = match get_config_path() {
         Some(path) => path,
@@ -190,6 +197,7 @@ Terminal=false
     process::exit(0);
 }
 
+#[cfg(target_os = "linux")]
 pub fn remove_xdg_autostart() {
     let mut desktopt_file_path = match get_config_path() {
         Some(path) => path,
