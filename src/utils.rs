@@ -4,7 +4,37 @@ use reqwest;
 use reqwest::blocking::Client;
 use reqwest::header::USER_AGENT;
 use serde_json;
-use std::{env, fs, process};
+use std::env;
+
+#[cfg(target_os = "linux")]
+use mpris::Player;
+#[cfg(target_os = "linux")]
+use std::time::Duration;
+#[cfg(target_os = "linux")]
+use std::{fs, process};
+
+// A common struct to hold song information, ensuring a consistent
+// return type regardless of the platform.
+#[derive(Debug)]
+pub struct MediaInfo {
+    pub title: String,
+    pub artist: String,
+    pub album_artist: String,
+    pub album: String,
+    pub is_playing: bool,
+    pub duration: u64,
+    pub position: u64,
+    pub is_track_position: bool,
+    pub art_url: String, // Link to cover art on the internet
+    pub url: String,     // Link to the currently playing media on the internet
+    #[cfg(target_os = "macos")]
+    pub player_id: String,
+    #[cfg(target_os = "macos")]
+    pub player_name: String,
+}
+
+// Use a Result to handle potential errors, like no media playing.
+type NowPlayingResult = Result<MediaInfo, Box<dyn std::error::Error>>;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -18,6 +48,7 @@ macro_rules! debug_log {
     };
 }
 
+#[cfg(target_os = "linux")]
 fn is_systemd_present() {
     match process::Command::new("ps")
         .arg("-p")
@@ -45,6 +76,7 @@ fn is_systemd_present() {
     println!("Use the \x1b[32;1m--xdg\x1b[0m flag with the subcommands like this: \x1b[32;1mmpris-discord-rpc enable --xdg\x1b[0m.");
 }
 
+#[cfg(target_os = "linux")]
 pub fn enable_service() {
     match process::Command::new("systemctl")
         .arg("--user")
@@ -77,6 +109,7 @@ pub fn enable_service() {
     process::exit(0);
 }
 
+#[cfg(target_os = "linux")]
 pub fn disable_service() {
     match process::Command::new("systemctl")
         .arg("--user")
@@ -96,6 +129,7 @@ pub fn disable_service() {
     process::exit(0);
 }
 
+#[cfg(target_os = "linux")]
 pub fn restart_service() {
     match process::Command::new("systemctl")
         .arg("--user")
@@ -124,6 +158,7 @@ pub fn get_config_path() -> Option<std::path::PathBuf> {
     }
 }
 
+#[cfg(target_os = "linux")]
 pub fn add_xdg_autostart() {
     let mut desktopt_file_path = match get_config_path() {
         Some(path) => path,
@@ -162,6 +197,7 @@ Terminal=false
     process::exit(0);
 }
 
+#[cfg(target_os = "linux")]
 pub fn remove_xdg_autostart() {
     let mut desktopt_file_path = match get_config_path() {
         Some(path) => path,
@@ -406,4 +442,170 @@ pub fn sanitize_name(input: &str) -> String {
         .chars()
         .filter(|c| c.is_alphanumeric() || *c == '_')
         .collect()
+}
+
+#[cfg(target_os = "linux")]
+pub fn get_currently_playing(player: &Player, debug_log: bool) -> NowPlayingResult {
+    let metadata = match player.get_metadata() {
+        Ok(metadata) => metadata,
+        Err(err) => return Err(format!("Could not get metadata from player: {}", err).into()),
+    };
+    debug_log!(debug_log, "{:#?}", metadata);
+
+    let playback_status = match player.get_playback_status() {
+        Ok(status) => status,
+        Err(err) => {
+            return Err(format!("Could not get playback status from player: {}", err).into())
+        }
+    };
+
+    let is_playing: bool = match playback_status {
+        mpris::PlaybackStatus::Playing => true,
+        mpris::PlaybackStatus::Paused => false,
+        mpris::PlaybackStatus::Stopped => false,
+    };
+    debug_log!(debug_log, "playback_status: {:#?}", playback_status);
+
+    // Parse metadata
+    let title = metadata.title().unwrap_or("Unknown Title").to_string();
+    let mut album = metadata.album_name().unwrap_or("Unknown Album").to_string();
+    if album.is_empty() {
+        album = "Unknown Album".to_string();
+    }
+    let artist = match metadata.artists() {
+        Some(artists) => {
+            if artists.is_empty() {
+                "Unknown Artist".to_string()
+            } else {
+                artists[0].to_string()
+            }
+        }
+        None => "Unknown Artist".to_string(),
+    };
+    let mut album_artist = match metadata.album_artists() {
+        Some(artists) => {
+            if artists.is_empty() {
+                "Unknown Artist".to_string()
+            } else {
+                artists[0].to_string()
+            }
+        }
+        None => "Unknown Artist".to_string(),
+    };
+    if album_artist.is_empty() || album_artist == "Unknown Artist" {
+        album_artist = artist.clone();
+    }
+
+    // Get track duration if supported by player else return 0
+    let duration = metadata.length().unwrap_or(Duration::new(0, 0)).as_secs();
+
+    // Get track position if supported by player else return 0 secs
+    let mut is_track_position: bool = false;
+    let position = match player.get_position() {
+        Ok(position) => {
+            is_track_position = true;
+            position.as_secs()
+        }
+        Err(_) => Duration::new(0, 0).as_secs(),
+    };
+
+    let art_url = match metadata.art_url() {
+        Some(url) => url.to_string(),
+        _ => String::new(),
+    };
+
+    let url = match metadata.url() {
+        Some(url) => {
+            let url_string = url.to_string();
+            if url_string.starts_with("http://") || url_string.starts_with("https://") {
+                url_string
+            } else {
+                String::new()
+            }
+        }
+        _ => String::new(),
+    };
+
+    Ok(MediaInfo {
+        title,
+        artist,
+        album_artist,
+        album,
+        is_playing,
+        duration,
+        position,
+        is_track_position,
+        art_url,
+        url,
+    })
+}
+
+#[cfg(target_os = "macos")]
+pub fn get_currently_playing() -> NowPlayingResult {
+    // PREREQUISITE: You must install this tool first!
+    // ==> brew install media-control
+    use std::process::Command;
+
+    let output = Command::new("media-control").args(["get"]).output();
+
+    match output {
+        Ok(output) => {
+            let result_str = String::from_utf8(output.stdout)?;
+            if result_str.eq("null\n") {
+                return Err("No media is currently playing. Waiting for any player...".into());
+            }
+            let json_result: serde_json::Value = serde_json::from_str(&result_str)?;
+
+            let title = json_result["title"]
+                .as_str()
+                .unwrap_or("Unknown Title")
+                .to_string();
+            let artist = json_result["artist"]
+                .as_str()
+                .unwrap_or("Unknown Artist")
+                .to_string();
+            let album = json_result["album"]
+                .as_str()
+                .unwrap_or("Unknown Album")
+                .to_string();
+            let album_artist = artist.clone(); // Assuming album artist is the same as artist
+            let is_playing = json_result["playing"].as_bool().unwrap_or(false);
+            let duration = json_result["duration"].as_u64().unwrap_or(0);
+            let position = json_result["elapsedTime"].as_u64().unwrap_or(0);
+            let player_id = json_result["bundleIdentifier"]
+                .as_str()
+                .unwrap_or("Unknown Player")
+                .to_string();
+            let player_name = player_id
+                .split('.')
+                .last()
+                .unwrap_or("Unknown Player")
+                .to_string(); // eg. org.videolan.vlc => vlc
+            let art_url = String::new(); // For now cant get artwork remote url like with mpris
+            let is_track_position = true;
+            let url = String::new();
+
+            Ok(MediaInfo {
+                title,
+                artist,
+                album_artist,
+                album,
+                is_playing,
+                duration,
+                position,
+                is_track_position,
+                art_url,
+                url,
+                player_id,
+                player_name,
+            })
+        }
+        Err(e) => {
+            // This error usually means media-control is not installed or not in PATH.
+            Err(format!(
+                "Failed to execute 'media-control'. Is it installed? (brew install media-control) Error: {}",
+                e
+            ).into())
+        }
+    }
 }

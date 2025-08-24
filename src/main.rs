@@ -1,8 +1,10 @@
 use discord_rich_presence::activity::StatusDisplayType;
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
-use mpris::PlayerFinder;
 use pickledb::{PickleDb, PickleDbDumpPolicy, SerializationMethod};
 use url_escape;
+
+#[cfg(target_os = "linux")]
+use mpris::PlayerFinder;
 
 use std::env;
 use std::fs;
@@ -34,6 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     debug_log!(settings.debug_log, "home_dir: {}", home_dir.display());
 
     // Exec subcommands
+    #[cfg(target_os = "linux")]
     match settings.suboptions.command {
         Some(settings::Commands::Enable { xdg }) => {
             if xdg {
@@ -50,6 +53,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         Some(settings::Commands::Restart {}) => utils::restart_service(),
+        None => {}
+    }
+    #[cfg(target_os = "macos")]
+    match settings.suboptions.command {
+        Some(_) => {
+            println!("Subcommands to manage the daemon are not available on macOS.");
+            std::process::exit(0);
+        }
         None => {}
     }
 
@@ -120,6 +131,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut is_activity_set: bool = false;
 
     // Preventing stdout spam while waiting for player or discord
+    #[cfg(target_os = "linux")]
     let mut dbus_notif: bool = false;
     let mut player_notif: u8 = 0;
     let mut discord_notif: bool = false;
@@ -175,7 +187,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             settings.debug_log,
             "───────────────────────────────Loop─1───────────────────────────────────"
         );
-        // Connect to MPRIS
+
+        // On Linux try to connect to MPRIS
+        #[cfg(target_os = "linux")]
         let player = match PlayerFinder::new() {
             Ok(player) => {
                 dbus_notif = false;
@@ -193,6 +207,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // List available players and exit
         if settings.list_players {
+            #[cfg(target_os = "linux")]
             match player.find_all() {
                 Ok(player_list) => {
                     if player_list.is_empty() {
@@ -222,10 +237,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("Could not find any player with MPRIS support.");
                 }
             };
+
+            #[cfg(target_os = "macos")]
+            {
+                println!("");
+                println!("Displaying the list of players is not supported on macOS.");
+                println!("However, it's possible to show the ID of the currently detected player.");
+
+                match utils::get_currently_playing() {
+                    Ok(player) => {
+                        println!("Player ID: {}", player.player_id);
+                        println!("");
+                        println!(
+                            "You can use this ID together with the -a flag to add this player to the allowlist:"
+                        );
+                        println!(r#" mpris-discord-rpc -a "{}""#, player.player_id);
+                        println!("");
+                        println!("You can use the -a argument multiple times to add more than one player to the allowlist:");
+                        println!(
+                            r#" mpris-discord-rpc -a "{}" -a "Second Player" -a "Any other player""#,
+                            player.player_id
+                        );
+                    }
+                    Err(_) => {
+                        println!("No player detected.");
+                    }
+                };
+            }
+
             return Ok(());
         }
 
         // Find active player (and filter them by name if enabled)
+        #[cfg(target_os = "linux")]
         let player_finder = if allowlist_enabled {
             let mut allowlist_finder = Err(mpris::FindingError::NoPlayerFound);
             for allowlist_entry in &settings.allowlist {
@@ -241,6 +285,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         // Connect with player
+        #[cfg(target_os = "linux")]
         let player = match player_finder {
             Ok(player) => {
                 if player_notif != 1 {
@@ -272,11 +317,65 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
+        // On macOS use media info fetching function to determine if anything is playing now
+        #[cfg(target_os = "macos")]
+        let player = match utils::get_currently_playing() {
+            Ok(player) => {
+                if allowlist_enabled {
+                    let mut is_player_on_allowlist = false;
+                    for allowlist_entry in &settings.allowlist {
+                        if *allowlist_entry == player.player_id {
+                            is_player_on_allowlist = true;
+                            break;
+                        }
+                    }
+                    if !is_player_on_allowlist {
+                        if player_notif != 2 {
+                            println!(
+                            	"Could not find any active player from your allowlist. Waiting for any player from your allowlist..."
+                            );
+                            player_notif = 2;
+                            discord_notif = false;
+                        }
+
+                        is_interrupted = true;
+                        utils::clear_activity(&mut is_activity_set, &mut client);
+                        sleep(Duration::from_secs(interval));
+                        continue;
+                    }
+                }
+
+                if player_notif != 1 {
+                    println!("Found active player using media-control.");
+                    player_notif = 1;
+                }
+                player
+            }
+            Err(e) => {
+                if player_notif != 2 {
+                    println!("{}", e);
+
+                    player_notif = 2;
+                    discord_notif = false;
+                }
+
+                is_interrupted = true;
+                utils::clear_activity(&mut is_activity_set, &mut client);
+                sleep(Duration::from_secs(interval));
+                continue;
+            }
+        };
+
+        #[cfg(target_os = "linux")]
+        let player_identity = player.identity().to_string();
+        #[cfg(target_os = "macos")]
+        let player_identity = player.player_name;
+
         // Use video presence if player is in video_players list
         let is_video_player = settings
             .video_players
             .iter()
-            .any(|player_name| player_name == &player.identity().to_string());
+            .any(|player_name| player_name == &player_identity);
         if is_video_player {
             client = &mut client_video;
             debug_log!(settings.debug_log, "Using video player presence");
@@ -286,7 +385,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         let player_name = if force_player_name.is_empty() {
-            player.identity().to_string()
+            player_identity
         } else {
             force_player_name.to_string()
         };
@@ -344,8 +443,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 settings.debug_log,
                 "───────────────────────────────Loop─2───────────────────────────────────"
             );
+
             // Get metadata from player
-            let metadata = match player.get_metadata() {
+            #[cfg(target_os = "linux")]
+            let media_info = match utils::get_currently_playing(&player, settings.debug_log) {
                 Ok(metadata) => metadata,
                 Err(err) => {
                     println!("Could not get metadata from player: {}", err);
@@ -353,70 +454,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     break;
                 }
             };
-            debug_log!(settings.debug_log, "{:#?}", metadata);
-
-            let playback_status = match player.get_playback_status() {
-                Ok(status) => status,
+            #[cfg(target_os = "macos")]
+            let media_info = match utils::get_currently_playing() {
+                Ok(metadata) => metadata,
                 Err(err) => {
-                    println!("Could not get playback status from player: {}", err);
+                    println!("Could not get metadata from player: {}", err);
                     utils::clear_activity(&mut is_activity_set, &mut client);
                     break;
                 }
             };
+            debug_log!(settings.debug_log, "{:#?}", media_info);
 
-            let is_playing: bool = match playback_status {
-                mpris::PlaybackStatus::Playing => true,
-                mpris::PlaybackStatus::Paused => false,
-                mpris::PlaybackStatus::Stopped => false,
-            };
-            debug_log!(
-                settings.debug_log,
-                "playback_status: {:#?}",
-                playback_status
-            );
-
-            if settings.only_when_playing && !is_playing {
+            if settings.only_when_playing && !media_info.is_playing {
                 is_interrupted = true;
                 utils::clear_activity(&mut is_activity_set, client);
                 sleep(Duration::from_secs(interval));
                 continue;
             }
 
-            // Parse metadata
-            let title = metadata.title().unwrap_or("Unknown Title");
-            let mut album = metadata.album_name().unwrap_or("Unknown Album");
-            if album.is_empty() {
-                album = "Unknown Album";
-            }
-            let artist = match metadata.artists() {
-                Some(artists) => {
-                    if artists.is_empty() {
-                        "Unknown Artist"
-                    } else {
-                        artists[0]
-                    }
-                }
-                None => "Unknown Artist",
-            };
-            let mut album_artist = match metadata.album_artists() {
-                Some(artists) => {
-                    if artists.is_empty() {
-                        "Unknown Artist"
-                    } else {
-                        artists[0]
-                    }
-                }
-                None => "Unknown Artist",
-            };
-            if album_artist.is_empty() || album_artist == "Unknown Artist" {
-                album_artist = artist;
-            }
-            let album_id = format!("{} - {}", album_artist, album);
+            let album_id = format!("{} - {}", media_info.album_artist, media_info.album);
 
             // If all metadata values are unknown then break
-            if (artist.to_lowercase() == "unknown artist")
-                && (album.to_lowercase() == "unknown artist")
-                && (title.to_lowercase() == "unknown artist")
+            if (media_info.artist.to_lowercase() == "unknown artist")
+                && (media_info.album.to_lowercase() == "unknown album")
+                && (media_info.title.to_lowercase() == "unknown title")
             {
                 debug_log!(settings.debug_log, "Unknown metadata, skipping...");
                 sleep(Duration::from_secs(interval));
@@ -424,7 +485,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             // If artist or track is empty then break
-            if (artist.len() == 0) | (title.len() == 0) {
+            if (media_info.artist.len() == 0) | (media_info.title.len() == 0) {
                 debug_log!(settings.debug_log, "Unknown metadata, skipping...");
                 sleep(Duration::from_secs(interval));
                 break;
@@ -432,50 +493,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut metadata_changed: bool = false;
             debug_log!(settings.debug_log, "Checking if metadata changed:");
-            debug_log!(settings.debug_log, "{title} - {last_title}");
-            debug_log!(settings.debug_log, "{album} - {last_album}");
-            debug_log!(settings.debug_log, "{artist} - {last_artist}");
-            debug_log!(settings.debug_log, "{album_artist} - {last_album_artist}");
+            debug_log!(settings.debug_log, "{} - {last_title}", media_info.title);
+            debug_log!(settings.debug_log, "{} - {last_album}", media_info.album);
+            debug_log!(settings.debug_log, "{} - {last_artist}", media_info.artist);
+            debug_log!(
+                settings.debug_log,
+                "{} - {last_album_artist}",
+                media_info.album_artist
+            );
             debug_log!(
                 settings.debug_log,
                 "is_playing: {} - {}",
-                is_playing,
+                media_info.is_playing,
                 last_is_playing
             );
-            if (title != last_title)
-                | (album != last_album)
-                | (artist != last_artist)
-                | (album_artist != last_album_artist)
-                | (is_playing != last_is_playing)
+            if (media_info.title != last_title)
+                | (media_info.album != last_album)
+                | (media_info.artist != last_artist)
+                | (media_info.album_artist != last_album_artist)
+                | (media_info.is_playing != last_is_playing)
             {
                 metadata_changed = true;
             }
 
-            // Get track duration if supported by player else return 0
-            let track_duration = metadata.length().unwrap_or(Duration::new(0, 0)).as_secs();
-
-            // Get track position if supported by player else return 0 secs
-            let mut is_track_position: bool = false;
-            let track_position = match player.get_position() {
-                Ok(position) => {
-                    is_track_position = true;
-                    position.as_secs()
-                }
-                Err(_) => Duration::new(0, 0).as_secs(),
-            };
             debug_log!(
                 settings.debug_log,
                 "track_position: {} - {}",
-                track_position,
+                media_info.position,
                 last_track_position
             );
 
             // Check if song repeated
-            if (track_position < last_track_position) && !metadata_changed {
+            if (media_info.position < last_track_position) && !metadata_changed {
                 debug_log!(settings.debug_log, "Detected a potential song seek/replay");
                 metadata_changed = true;
             }
-            last_track_position = track_position; // update it before loop continue
+            last_track_position = media_info.position; // update it before loop continue
             debug_log!(settings.debug_log, "metadata_changed: {}", metadata_changed);
 
             if !metadata_changed && !is_interrupted {
@@ -490,7 +543,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Get unix time of track start if supported, else return time now
             let time_start: u64 = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-                Ok(n) => n.as_secs().sub(track_position),
+                Ok(n) => n.as_secs().sub(media_info.position),
                 Err(_) => 0,
             };
 
@@ -501,11 +554,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     _cover_url = utils::get_cover_url(
                         &album_id,
-                        album,
+                        media_info.album.as_str(),
                         _cover_url,
                         cache_enabled,
                         &mut album_cache,
-                        album_artist,
+                        media_info.album_artist.as_str(),
                         &lastfm_api_key,
                     );
                 }
@@ -515,58 +568,59 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if _cover_url.is_empty() || _cover_url == "missing-cover" {
                         _cover_url = utils::get_cover_url_musicbrainz(
                             &album_id,
-                            album,
+                            media_info.album.as_str(),
                             _cover_url,
                             cache_enabled,
                             &mut album_cache,
-                            album_artist,
+                            media_info.album_artist.as_str(),
                         );
                     }
                 }
             }
 
             let image: String = if _cover_url.is_empty() || _cover_url == "missing-cover" {
-                match metadata.art_url() {
-                    Some(url) => {
-                        if url.starts_with("http") && !settings.disable_mpris_art_url {
-                            url.to_string()
+                match media_info.art_url.is_empty() {
+                    true => "missing-cover".to_string(),
+                    false => {
+                        if media_info.art_url.starts_with("http") && !settings.disable_mpris_art_url
+                        {
+                            media_info.art_url
                         } else {
                             "missing-cover".to_string()
                         }
                     }
-                    _ => "missing-cover".to_string(),
                 }
             } else {
                 _cover_url.clone()
             };
 
             // Save last refresh info
-            last_title = title.to_string();
-            last_album = album.to_string();
-            last_artist = artist.to_string();
-            last_album_artist = album_artist.to_string();
+            last_title = media_info.title.clone();
+            last_album = media_info.album.clone();
+            last_artist = media_info.artist.clone();
+            last_album_artist = media_info.album_artist;
             last_album_id = album_id.to_string();
-            last_is_playing = is_playing;
+            last_is_playing = media_info.is_playing;
 
             // Set activity
-            let song_name: String = format!("{artist} - {title}");
-            let title = if title.len() > 1 {
-                String::from(title)
+            let song_name: String = format!("{} - {}", media_info.artist, media_info.title);
+            let title = if media_info.title.len() > 1 {
+                media_info.title
             } else {
-                format!("{} ", title) // Discord activity min 2 char len bug fix
+                format!("{} ", media_info.title) // Discord activity min 2 char len bug fix
             };
             let artist = match rpc_name.as_str() {
                 "artist" => {
-                    if artist.len() > 1 {
-                        String::from(artist)
+                    if media_info.artist.len() > 1 {
+                        media_info.artist
                     } else {
-                        format!("{} ", artist) // Discord activity min 2 char len bug fix
+                        format!("{} ", media_info.artist) // Discord activity min 2 char len bug fix
                     }
                 }
-                _ => format!("by: {}", artist),
+                _ => format!("by: {}", media_info.artist),
             };
-            let album = format!("album: {}", album);
-            let status_text: String = if is_playing {
+            let album = format!("album: {}", media_info.album);
+            let status_text: String = if media_info.is_playing {
                 "playing".to_string()
             } else {
                 "paused".to_string()
@@ -626,9 +680,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 payload = payload.state(&artist);
             }
 
-            payload = if is_track_position && (track_duration > 0) {
-                let time_end = time_start + track_duration;
-                if is_playing {
+            payload = if media_info.is_track_position && (media_info.duration > 0) {
+                let time_end = time_start + media_info.duration;
+                if media_info.is_playing {
                     payload.timestamps(
                         activity::Timestamps::new()
                             .start(time_start.try_into().unwrap())
@@ -656,17 +710,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "https://listenbrainz.org/user/{}/",
                 url_escape::encode_component(&listenbrainz_name)
             );
-            let mpris_url = match metadata.url() {
-                Some(url) => {
-                    let url_string = url.to_string();
-                    if url_string.starts_with("http://") || url_string.starts_with("https://") {
-                        url_string
-                    } else {
-                        String::new()
-                    }
-                }
-                _ => String::new(),
-            };
 
             // Add YouTube URL to song title
             payload = payload.details_url(&yt_url);
@@ -708,7 +751,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                     "mprisUrl" => {
-                        if mpris_url.is_empty() {
+                        if media_info.url.is_empty() {
                             // if mpris url is empty or not set convert button to yt button
                             buttons.push(activity::Button::new(
                                 "Search this song on YouTube",
@@ -716,9 +759,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             ));
                         } else {
                             if is_video_player {
-                                buttons.push(activity::Button::new("Watch Now", &mpris_url));
+                                buttons.push(activity::Button::new("Watch Now", &media_info.url));
                             } else {
-                                buttons.push(activity::Button::new("Play Now", &mpris_url));
+                                buttons.push(activity::Button::new("Play Now", &media_info.url));
                             }
                         }
                     }
