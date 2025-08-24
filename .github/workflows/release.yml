@@ -77,9 +77,8 @@ jobs:
                   tar -czf target/release/${{ matrix.target }}.tar.gz -C target/release mpris-discord-rpc
 
             - name: GH Release (Linux)
-              if: runner.os == 'Linux'
+              if: startsWith(github.ref, 'refs/tags/') || runner.os == 'Linux'
               uses: softprops/action-gh-release@v2
-              if: startsWith(github.ref, 'refs/tags/')
               with:
                   body_path: .github/release-notes.md
                   files: |
@@ -87,11 +86,10 @@ jobs:
                       target/release/mpris-discord-rpc.deb
                       target/release/mpris-discord-rpc.rpm
                       target/appimage/mpris-discord-rpc.AppImage
-            
+
             - name: GH Release (macOS)
-              if: runner.os == 'macOS'
+              if: startsWith(github.ref, 'refs/tags/') || runner.os == 'macOS'
               uses: softprops/action-gh-release@v2
-              if: startsWith(github.ref, 'refs/tags/')
               with:
                   body_path: .github/release-notes.md
                   files: |
