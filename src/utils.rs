@@ -570,8 +570,8 @@ pub fn get_currently_playing() -> NowPlayingResult {
                 .to_string();
             let album_artist = artist.clone(); // Assuming album artist is the same as artist
             let is_playing = json_result["playing"].as_bool().unwrap_or(false);
-            let duration = json_result["duration"].as_u64().unwrap_or(0);
-            let position = json_result["elapsedTime"].as_u64().unwrap_or(0);
+            let duration = json_result["duration"].as_f64().unwrap_or(0.0) as u64;
+            let position = json_result["elapsedTime"].as_f64().unwrap_or(0.0) as u64;
             let player_id = json_result["bundleIdentifier"]
                 .as_str()
                 .unwrap_or("Unknown Player")
