@@ -92,5 +92,6 @@ jobs:
               uses: softprops/action-gh-release@v2
               with:
                   body_path: .github/release-notes.md
+                  draft: true
                   files: |
                       target/release/${{ matrix.target }}.tar.gz
