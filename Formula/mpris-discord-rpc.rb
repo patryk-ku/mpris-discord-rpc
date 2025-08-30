@@ -1,8 +1,8 @@
 class MprisDiscordRpc < Formula
-  desc "Cross-platform Discord rich presence for music with album cover and progress bar support."
+  desc "Cross-platform Discord rich presence for music with album cover and progress bar"
   homepage "https://github.com/patryk-ku/mpris-discord-rpc"
-  license "MIT"
   version "0.5.1"
+  license "MIT"
 
   depends_on "media-control"
 
@@ -23,6 +23,7 @@ class MprisDiscordRpc < Formula
   service do
     run [opt_bin/"mpris-discord-rpc"]
     keep_alive true
+    environment_variables PATH: "#{HOMEBREW_PREFIX}/bin:/usr/bin:/bin"
     log_path var/"log/mpris-discord-rpc.log"
     error_log_path var/"log/mpris-discord-rpc.error.log"
   end
