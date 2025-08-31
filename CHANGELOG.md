@@ -1,3 +1,9 @@
+## v0.6.0
+
+- Ported to MacOS.
+- Renamed project from **mpris-discord-rpc** to **music-discord-rpc**.
+- Added `--get-player-id` flag for easier retrieval of Player ID when requesting missing icons.
+
 ## v0.5.1
 
 - Added `--only-when-playing` argument and `only_when_playing` option in the config file. When enabled, RPC activity is only sent to Discord when media is playing, similar to Spotify. Thanks to @aritsune for the contribution.
