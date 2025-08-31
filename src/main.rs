@@ -392,11 +392,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         } else {
             force_player_name.to_string()
         };
+
+        #[cfg(target_os = "linux")]
         let player_id = if force_player_id.is_empty() {
             utils::sanitize_name(&player_name)
         } else {
             force_player_id.to_string()
         };
+
+        #[cfg(target_os = "macos")]
+        let player_id = if force_player_id.is_empty() {
+            player.player_id
+        } else {
+            force_player_id.to_string()
+        };
+
         debug_log!(settings.debug_log, "player_name: {}", player_name);
         debug_log!(settings.debug_log, "player_id: {}", player_id);
 
