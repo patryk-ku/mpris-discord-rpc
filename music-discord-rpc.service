@@ -1,9 +1,9 @@
 [Unit]
-Description=Linux Discord rich presence for music, using MPRIS with album cover and progress bar support.
+Description=Cross-platform Discord rich presence for music with album cover and progress bar support.
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/mpris-discord-rpc
+ExecStart=/usr/bin/music-discord-rpc
 Restart=always
 RestartSec=10
 StandardOutput=journal

@@ -1,10 +1,10 @@
 [package]
-name = "mpris-discord-rpc"
+name = "music-discord-rpc"
 version = "0.5.1"
 edition = "2021"
 authors = ["Patryk Kurdziel <patryk.kurdziel@protonmail.com>"]
-description = "Linux Discord rich presence for music, using MPRIS with album cover and progress bar support."
-repository = "https://github.com/patryk-ku/mpris-discord-rpc"
+description = "Cross-platform Discord rich presence for music with album cover and progress bar support."
+repository = "https://github.com/patryk-ku/music-discord-rpc"
 license = "MIT"
 
 [dependencies]

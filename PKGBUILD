@@ -1,10 +1,10 @@
 # Maintainer: Patryk Kurdziel <patryk.kurdziel@protonmail.com>
 
-_pkgname=mpris-discord-rpc
+_pkgname=music-discord-rpc
 pkgname="${_pkgname}-bin"
 pkgver=0.5.1
 pkgrel=1
-pkgdesc='Linux Discord rich presence for music, using MPRIS with album cover and progress bar support.'
+pkgdesc='Cross-platform Discord rich presence for music with album cover and progress bar support.'
 url="https://github.com/patryk-ku/${_pkgname}"
 license=('MIT')
 arch=('x86_64')

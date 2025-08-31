@@ -1,2 +1,2 @@
-site='https://github.com/patryk-ku/mpris-discord-rpc/tags'
+site='https://github.com/patryk-ku/music-discord-rpc/tags'
 pattern='/archive/refs/tags/v\K[0-9.]+(?=.tar.gz)'

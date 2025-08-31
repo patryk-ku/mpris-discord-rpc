@@ -1,32 +1,53 @@
-# mpris-discord-rpc ![GitHub Release](https://img.shields.io/github/v/release/patryk-ku/mpris-discord-rpc?label=%20) ![License](https://img.shields.io/badge/MIT-blue) ![Rust](https://img.shields.io/badge/Rust-%23000000.svg?e&logo=rust&logoColor=white&color=CE412B) ![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)
+# music-discord-rpc ![GitHub Release](https://img.shields.io/github/v/release/patryk-ku/music-discord-rpc?label=%20) ![License](https://img.shields.io/badge/MIT-blue) ![Rust](https://img.shields.io/badge/Rust-%23000000.svg?e&logo=rust&logoColor=white&color=CE412B) ![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black) ![macOS](https://img.shields.io/badge/MacOS-000000?logo=apple&logoColor=F0F0F0)
 
 <p align="center">
 <img src=".github/assets/demo.png"/>
 </p>
 
-Linux Discord rich presence for music, using MPRIS with **album cover and progress bar support**. You can customize additional buttons, such as linking to your Last.fm profile or searching for the current song on YouTube. There's also an option to display either the music player's icon or your Last.fm avatar next to the album cover. Album covers are fetched from Last.fm, with MusicBrainz used as a fallback. The application is written in Rust.
+Cross-platform Discord rich presence for music with **album cover and progress bar support**. You can customize additional buttons, such as linking to your Last.fm profile or searching for the current song on YouTube. There's also an option to display either the music player's icon or your Last.fm avatar next to the album cover. Album covers are fetched from Last.fm, with MusicBrainz used as a fallback. The application is written in Rust.
 
 ## Supported players
 
+### Linux
+
 Any player or app with [MPRIS](https://wiki.archlinux.org/title/MPRIS) support. Basically nearly every music application on Linux supports MRPIS in some way so there are plenty of compatible players. Web browsers also support MPRIS so this will work even with music streaming services playing in Google Chrome or Firefox.
+
+### MacOS
+
+The macOS version uses [media-control](https://github.com/ungive/media-control) to retrieve information about the currently playing song. From what I understand, media-control can extract information from most if not all music players, but I cannot guarantee this 100%.
 
 ## Requirements
 
+### Linux
+
 Any fairly new 64-bit Linux distribution. It will probably also work on older versions of Linux but would have to be manually compiled on an older system. The optional background service and automatic startup capabilities rely on systemd or XDG Autostart.
 
+### MacOS
+
+It works both on Intel-based Macs and the newer ones with Apple Silicon.
+
 ## Installation
+
+### MacOS
+
+<details>
+  <summary>Instructions</summary>
+
+WIP
+
+</details>
 
 ### Debian, Ubuntu, Mint and derivatives (.deb)
 
 <details>
   <summary>Instructions</summary>
 
-Download the latest .deb file from the [Releases](https://github.com/patryk-ku/mpris-discord-rpc/releases) page.
+Download the latest .deb file from the [Releases](https://github.com/patryk-ku/music-discord-rpc/releases) page.
 
 Now double-click it from file explorer to install it using Software Manager or use this command:
 
 ```sh
-sudo dpkg -i mpris-discord-rpc.deb
+sudo dpkg -i music-discord-rpc.deb
 ```
 
 </details>
@@ -36,7 +57,7 @@ sudo dpkg -i mpris-discord-rpc.deb
 <details>
   <summary>Instructions</summary>
 
-Download the latest .rpm file from the [Releases](https://github.com/patryk-ku/mpris-discord-rpc/releases) page.
+Download the latest .rpm file from the [Releases](https://github.com/patryk-ku/music-discord-rpc/releases) page.
 
 Double-click the file in your file explorer to install it using your distribution's software manager.
 
@@ -45,13 +66,13 @@ Alternatively, you can use the following commands:
 Fedora
 
 ```sh
-sudo dnf install ./mpris-discord-rpc.rpm
+sudo dnf install ./music-discord-rpc.rpm
 ```
 
 openSUSE
 
 ```sh
-sudo zypper install mpris-discord-rpc.rpm
+sudo zypper install music-discord-rpc.rpm
 ```
 
 </details>
@@ -61,10 +82,10 @@ sudo zypper install mpris-discord-rpc.rpm
 <details>
   <summary>Instructions</summary>
 
-Available in the [AUR](https://aur.archlinux.org/packages/mpris-discord-rpc-bin). Install with your favorite AUR helper:
+Available in the [AUR](https://aur.archlinux.org/packages/music-discord-rpc-bin). Install with your favorite AUR helper:
 
 ```sh
-yay -S mpris-discord-rpc-bin
+yay -S music-discord-rpc-bin
 ```
 
 </details>
@@ -80,20 +101,20 @@ If you don't want to build it locally, use the 'Other Distributions' option (bel
 ```sh
 #1. Change directory to your local clone of void-packages repo
 cd /path/to/void-packages
-# 2. Create package template folder for mpris-discord-rpc
-mkdir -p srcpkgs/mpris-discord-rpc
+# 2. Create package template folder for music-discord-rpc
+mkdir -p srcpkgs/music-discord-rpc
 # 3. Fetch template
-curl https://raw.githubusercontent.com/patryk-ku/mpris-discord-rpc/refs/heads/main/xbps/template > srcpkgs/mpris-discord-rpc/template
+curl https://raw.githubusercontent.com/patryk-ku/music-discord-rpc/refs/heads/main/xbps/template > srcpkgs/music-discord-rpc/template
 # 4. And version checking pattern
-curl https://raw.githubusercontent.com/patryk-ku/mpris-discord-rpc/refs/heads/main/xbps/update > srcpkgs/mpris-discord-rpc/update
-# 5. Update checksum of mpris-discord-rpc with newest release
-xgensum -i mpris-discord-rpc
+curl https://raw.githubusercontent.com/patryk-ku/music-discord-rpc/refs/heads/main/xbps/update > srcpkgs/music-discord-rpc/update
+# 5. Update checksum of music-discord-rpc with newest release
+xgensum -i music-discord-rpc
 # 6. Build and package
-./xbps-src pkg mpris-discord-rpc
+./xbps-src pkg music-discord-rpc
 # 7. Install
-xi mpris-discord-rpc
+xi music-discord-rpc
 ```
-To update repeat the above steps. You can use `./xbps-src update-check mpris-discord-rpc` to check for availability of new version(s).
+To update repeat the above steps. You can use `./xbps-src update-check music-discord-rpc` to check for availability of new version(s).
 
 See the [Intro](https://xbps-src-tutorials.github.io/) to or [Manual](https://github.com/void-linux/void-packages/blob/master/Manual.md) for `xbps-src` for details about how it builds and operates.
 
@@ -107,20 +128,20 @@ Note that officially supported platform is x86_64 on glibc only, the rest aren't
 <details>
   <summary>Instructions</summary>
 
-Download the latest executable from the [Releases](https://github.com/patryk-ku/mpris-discord-rpc/releases) page (just a `mpris-discord-rpc` file) and grant execute permissions:
+Download the latest executable from the [Releases](https://github.com/patryk-ku/music-discord-rpc/releases) page (just a `music-discord-rpc` file) and grant execute permissions:
 
 ```sh
-curl -L -o mpris-discord-rpc 'https://github.com/patryk-ku/mpris-discord-rpc/releases/latest/download/mpris-discord-rpc'
-chmod +x mpris-discord-rpc
+curl -L -o music-discord-rpc 'https://github.com/patryk-ku/music-discord-rpc/releases/latest/download/music-discord-rpc'
+chmod +x music-discord-rpc
 ```
 
 This binary has no additional dependencies and should work on most distributions. So you can simply run the file in the terminal like this:
 
 ```sh
-./mpris-discord-rpc
+./music-discord-rpc
 ```
 
-You can add the binary to your PATH or create an alias. Now the only thing left is to set it to launch automatically on startup. There are several ways to do that. If your distribution uses systemd, you can download a ready-to-use [mpris-discord-rpc.service](mpris-discord-rpc.service) file and save it to `~/.config/systemd/user/`. Then, edit the `ExecStart=/usr/bin/mpris-discord-rpc` line so it points to the location where you keep the binary. Once that's done, you can control the app's autostart behavior using the `enable`, `disable`, or `restart` subcommands. However, if your distribution doesn’t use systemd, you’ll need to create a service unit manually for your process manager. Alternatively, you can use [XDG Autostart](https://wiki.archlinux.org/title/XDG_Autostart) or configure it in your [desktop environment](https://wiki.archlinux.org/title/Autostarting#On_desktop_environment_startup) or [window manager’s](https://wiki.archlinux.org/title/Autostarting#On_window_manager_startup) config file, depending on what you’re using. The command `mpris-discord-rpc enable --xdg` will create a `.desktop` file for XDG Autostart in `$XDG_CONFIG_HOME/autostart` for you. Feel free to customize it to fit your needs.
+You can add the binary to your PATH or create an alias. Now the only thing left is to set it to launch automatically on startup. There are several ways to do that. If your distribution uses systemd, you can download a ready-to-use [music-discord-rpc.service](music-discord-rpc.service) file and save it to `~/.config/systemd/user/`. Then, edit the `ExecStart=/usr/bin/music-discord-rpc` line so it points to the location where you keep the binary. Once that's done, you can control the app's autostart behavior using the `enable`, `disable`, or `restart` subcommands. However, if your distribution doesn’t use systemd, you’ll need to create a service unit manually for your process manager. Alternatively, you can use [XDG Autostart](https://wiki.archlinux.org/title/XDG_Autostart) or configure it in your [desktop environment](https://wiki.archlinux.org/title/Autostarting#On_desktop_environment_startup) or [window manager’s](https://wiki.archlinux.org/title/Autostarting#On_window_manager_startup) config file, depending on what you’re using. The command `music-discord-rpc enable --xdg` will create a `.desktop` file for XDG Autostart in `$XDG_CONFIG_HOME/autostart` for you. Feel free to customize it to fit your needs.
 
 If somehow the binary doesn't work on your distribution, there is also an `.AppImage` package available.
 
@@ -134,21 +155,25 @@ If somehow the binary doesn't work on your distribution, there is also an `.AppI
 Use this command to start the service in the background and enable autostart. See the [Autostart](#autostart) section for more information.
 
 ```sh
-mpris-discord-rpc enable
+# On Linux
+music-discord-rpc enable
+
+# On MacOS
+brew services start mpris-discord-rpc
 ```
 
 Or just directly run it in the terminal:
 
 ```sh
-mpris-discord-rpc
+music-discord-rpc
 ```
 
 You can change the default settings using arguments or by editing config file. Launch executable with `-h` or `--help` for aditional info:
 
 ```
-mpris-discord-rpc --help
+music-discord-rpc --help
 
-Usage: mpris-discord-rpc [OPTIONS] [COMMAND]
+Usage: music-discord-rpc [OPTIONS] [COMMAND]
 
 Commands:
   enable   Start RPC in the background and enable autostart
@@ -203,14 +228,16 @@ Options:
 
 ### Autostart
 
+#### Linux
+
 There are 2 built-in ways to autostart this app: systemd and XDG Autostart:
 
 ```sh
 # Systemd distributions (Ubuntu, Fedora, Arch, etc)
-mpris-discord-rpc enable
+music-discord-rpc enable
 
 # XDG Autostart for distrubutions without systemd (Void and others)
-mpris-discord-rpc enable --xdg
+music-discord-rpc enable --xdg
 
 ```
 
@@ -221,26 +248,54 @@ The `--xdg` flag is available for the `enable` and `disable` subcommands and cre
 With systemd you can check the service status with:
 
 ```sh
-systemctl --user status mpris-discord-rpc.service
+systemctl --user status music-discord-rpc.service
 ```
 
 And check the logs with:
 
 ```sh
-journalctl --user -u mpris-discord-rpc.service
+journalctl --user -u music-discord-rpc.service
 ```
 
 Or monitor the logs in real-time with:
 
 ```sh
-journalctl --user -u mpris-discord-rpc.service -f
+journalctl --user -u music-discord-rpc.service -f
+```
+
+#### MacOS
+
+Enable app and autostart:
+
+```sh
+brew services start music-discord-rpc
+```
+
+Disable app and autostart:
+
+```sh
+brew services stop music-discord-rpc
+```
+
+Restart app:
+
+```sh
+brew services restart music-discord-rpc
 ```
 
 ### Config
 
-The application will generate a configuration file at `~/.config/mpris-discord-rpc/config.yaml` when you run it for the first time. You can reset or regenerate it with `--reset-config`. You can also check default config file here: [config.yaml](config.yaml).
+The application will generate a configuration file at `~/.config/music-discord-rpc/config.yaml` when you run it for the first time. You can reset or regenerate it with `--reset-config`. You can also check default config file here: [config.yaml](config.yaml).
 
-After editing the file, run the `mpris-discord-rpc restart` command to reload the systemd service and apply the changes.
+After editing the file, run this command to reload service and apply the changes:
+
+```sh
+# On Linux
+music-discord-rpc restart
+
+# On MacOS
+brew services restart music-discord-rpc
+```
 
 Keep in mind that when using XDG Autostart, there's no built-in way to restart the service after changing the config. Config updates will only take effect after reboot. You can manually kill the process and restart it in the background as a workaround.
 
@@ -251,7 +306,7 @@ To select the music players, use the `-a`,`--allowlist-add` argument or `allowli
 arguments:
 
 ```sh
-mpris-discord-rpc -a "VLC Media Player" -a "Chrome" -a "Any other player"
+music-discord-rpc -a "VLC Media Player" -a "Chrome" -a "Any other player"
 ```
 
 config:
@@ -272,7 +327,7 @@ You can mark players as video players using the `-w`,`--video-players` argument 
 arguments:
 
 ```sh
-mpris-discord-rpc -w "VLC Media Player" -w "Chrome" -w "Any other player"
+music-discord-rpc -w "VLC Media Player" -w "Chrome" -w "Any other player"
 ```
 
 config:
@@ -307,7 +362,7 @@ You can choose what shows up after "Listening to" on the Discord user list: arti
 arguments:
 
 ```sh
-mpris-discord-rpc -r artist
+music-discord-rpc -r artist
 ```
 
 config:
@@ -339,7 +394,7 @@ Remember to provide your usernames for the services you want to add as buttons.
 arguments:
 
 ```sh
-mpris-discord-rpc -b yt -b lastfm --lastfm-name nickname
+music-discord-rpc -b yt -b lastfm --lastfm-name nickname
 ```
 
 config:
@@ -364,7 +419,7 @@ You can choose from available options: `playPause`, `player`, `lastfmAvatar`, `n
 arguments:
 
 ```sh
-mpris-discord-rpc -s player
+music-discord-rpc -s player
 ```
 
 config:
@@ -380,7 +435,7 @@ You can also force a different player icon and name to be displayed than the one
 arguments:
 
 ```sh
-mpris-discord-rpc --force-player-id "vlc_media_player" --force-player-name "VLC media player"
+music-discord-rpc --force-player-id "vlc_media_player" --force-player-name "VLC media player"
 ```
 
 config:
@@ -413,15 +468,15 @@ If you do need to use this fix, note that it will need to be done **every reboot
 
 As it is a very simple program its impact on computer performance is unnoticeable. Normaly it uses around **12 MiB** of RAM but even less than **6 MiB** when fetching album covers only from cache.
 
-If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-rpc/` or `$HOME/.cache/mpris-discord-rpc/`. The application caches only image URLs from last.fm, not the images themselves, keeping the cache size small.
+If not disabled, the program stores the cache in `$XDG_CACHE_HOME/music-discord-rpc/` or `$HOME/.cache/music-discord-rpc/`. The application caches only image URLs from last.fm, not the images themselves, keeping the cache size small.
 
 ## Compile from source
 
 1. Install Rust and Cargo using instructions from [Rust site](https://www.rust-lang.org/).
 2. Clone the repository.
    ```sh
-   git clone 'https://github.com/patryk-ku/mpris-discord-rpc'
-   cd mpris-discord-rpc
+   git clone 'https://github.com/patryk-ku/music-discord-rpc'
+   cd music-discord-rpc
    ```
 3. (Optional) Rename `.env.example` to `.env` and insert here your last.fm API key. You can easily get it [here](https://www.last.fm/pl/api). Do this if you want to embed the API key in the binary. If you don't, you can provide it later via argument or config file.
    ```sh
@@ -432,7 +487,7 @@ If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-
    ```sh
    cargo build --release
    ```
-5. The compiled executable file location is: `target/release/mpris-discord-rpc`.
+5. The compiled executable file location is: `target/release/music-discord-rpc`.
 
 ## Changelog
 
@@ -459,13 +514,13 @@ Then, clear the album cache.
 <details>
   <summary>How to clear album cache?</summary>
 
-If not disabled, the program stores the cache in `$XDG_CACHE_HOME/mpris-discord-rpc/` or `$HOME/.cache/mpris-discord-rpc/`. Just delete file inside this directory and restart service.
+If not disabled, the program stores the cache in `$XDG_CACHE_HOME/music-discord-rpc/` or `$HOME/.cache/music-discord-rpc/`. Just delete file inside this directory and restart service.
 
 For most users, the following commands should work:
 
 ```sh
-rm ~/.cache/mpris-discord-rpc/album_cache.db
-mpris-discord-rpc restart
+rm ~/.cache/music-discord-rpc/album_cache.db
+music-discord-rpc restart
 ```
 
 </details>
@@ -482,7 +537,7 @@ Open an Issue with:
 <details>
   <summary>How are new player icons added without releasing a new binary?</summary>
 
-Icons are managed through Discord Developer Portal, so no app update is needed after adding new ones. See [here](https://github.com/patryk-ku/mpris-discord-rpc/issues/29#issuecomment-2936507734).
+Icons are managed through Discord Developer Portal, so no app update is needed after adding new ones. See [here](https://github.com/patryk-ku/music-discord-rpc/issues/29#issuecomment-2936507734).
 
 </details>
 
@@ -500,8 +555,15 @@ Feel free to open a new Issue and share your idea! I'm generally open to adding 
 
 </details>
 
+<details>
+  <summary>The macOS version doesn't work correctly / displays data incorrectly.</summary>
+
+Before opening an issue, please check if `media-control get -h` returns data correctly, as the macOS version relies on it and my program only reads its output. If there's a problem with [media-control](https://github.com/ungive/media-control), open a new issue in its repository, if not, open one here.
+
+</details>
+
 ## Credits
 
-I wouldn't have been able to create this without two fantastic crates: [mpris-rs](https://github.com/Mange/mpris-rs) and [discord-rich-presence](https://github.com/vionya/discord-rich-presence). Implementing these features myself would have been beyond my current skills. A huge thank you to their creators.
+I wouldn't have been able to create this without two fantastic crates: [mpris-rs](https://github.com/Mange/mpris-rs) and [discord-rich-presence](https://github.com/vionya/discord-rich-presence). The macOS version wouldn't be possible without [media-control](https://github.com/ungive/media-control). Implementing these features myself would have been beyond my current skills. A huge thank you to their creators.
 
 Any trademarks, featured track metadata, artwork and coverart in banner, music player icons and streaming service logos belong to their respective owners.

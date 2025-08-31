@@ -142,8 +142,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set cache path
     let cache_dir = match env::var("XDG_CACHE_HOME") {
-        Ok(xgd_cache_home) => PathBuf::from(xgd_cache_home).join("mpris-discord-rpc"),
-        Err(_) => home_dir.join(".cache/mpris-discord-rpc"),
+        Ok(xgd_cache_home) => PathBuf::from(xgd_cache_home).join("music-discord-rpc"),
+        Err(_) => home_dir.join(".cache/music-discord-rpc"),
     };
 
     if cache_enabled {
@@ -223,12 +223,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("Use the name to choose from which source the script should take data for the Discord status.");
                         println!("Usage instructions:");
                         println!("");
-                        println!(r#" mpris-discord-rpc -a "{}""#, player_list[0].identity());
+                        println!(r#" music-discord-rpc -a "{}""#, player_list[0].identity());
                         println!("");
                         println!("You can use the -a argument multiple times to add more than one player to the allowlist:");
                         println!("");
                         println!(
-                            r#" mpris-discord-rpc -a "{}" -a "Second Player" -a "Any other player""#,
+                            r#" music-discord-rpc -a "{}" -a "Second Player" -a "Any other player""#,
                             player_list[0].identity()
                         );
                     }
@@ -251,11 +251,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!(
                             "You can use this ID together with the -a flag to add this player to the allowlist:"
                         );
-                        println!(r#" mpris-discord-rpc -a "{}""#, player.player_id);
+                        println!(r#" music-discord-rpc -a "{}""#, player.player_id);
                         println!("");
                         println!("You can use the -a argument multiple times to add more than one player to the allowlist:");
                         println!(
-                            r#" mpris-discord-rpc -a "{}" -a "Second Player" -a "Any other player""#,
+                            r#" music-discord-rpc -a "{}" -a "Second Player" -a "Any other player""#,
                             player.player_id
                         );
                     }
@@ -768,7 +768,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "shamelessAd" => {
                         buttons.push(activity::Button::new(
                             "Get This RPC",
-                            "https://github.com/patryk-ku/mpris-discord-rpc",
+                            "https://github.com/patryk-ku/music-discord-rpc",
                         ));
                     }
                     _ => continue,

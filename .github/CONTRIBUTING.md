@@ -1,8 +1,8 @@
-# Contributing to mpris-discord-rpc
+# Contributing to music-discord-rpc
 
 ## Submitting an Issue (Bugs, Feature Requests, etc)
 
-Before creating an issue, please read the [FAQ](https://github.com/patryk-ku/mpris-discord-rpc?tab=readme-ov-file#faq).
+Before creating an issue, please read the [FAQ](https://github.com/patryk-ku/music-discord-rpc?tab=readme-ov-file#faq).
 
 ## Contributing Code (Pull Requests)
 

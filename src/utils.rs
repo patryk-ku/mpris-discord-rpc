@@ -73,7 +73,7 @@ fn is_systemd_present() {
     println!(
         "You can try using XDG Autostart instead to add the application to autostart without systemd."
     );
-    println!("Use the \x1b[32;1m--xdg\x1b[0m flag with the subcommands like this: \x1b[32;1mmpris-discord-rpc enable --xdg\x1b[0m.");
+    println!("Use the \x1b[32;1m--xdg\x1b[0m flag with the subcommands like this: \x1b[32;1mmusic-discord-rpc enable --xdg\x1b[0m.");
 }
 
 #[cfg(target_os = "linux")]
@@ -95,7 +95,7 @@ pub fn enable_service() {
         .arg("--user")
         .arg("enable")
         .arg("--now")
-        .arg("mpris-discord-rpc.service")
+        .arg("music-discord-rpc.service")
         .status()
     {
         Ok(_) => println!("Enabled and started user systemd service."),
@@ -115,7 +115,7 @@ pub fn disable_service() {
         .arg("--user")
         .arg("disable")
         .arg("--now")
-        .arg("mpris-discord-rpc.service")
+        .arg("music-discord-rpc.service")
         .status()
     {
         Ok(_) => println!("Stopped and disabled user systemd service."),
@@ -134,7 +134,7 @@ pub fn restart_service() {
     match process::Command::new("systemctl")
         .arg("--user")
         .arg("restart")
-        .arg("mpris-discord-rpc.service")
+        .arg("music-discord-rpc.service")
         .status()
     {
         Ok(_) => println!("Restarted user systemd service."),
@@ -168,12 +168,12 @@ pub fn add_xdg_autostart() {
         }
     };
     desktopt_file_path.push("autostart");
-    desktopt_file_path.push("mpris-discord-rpc.desktop");
+    desktopt_file_path.push("music-discord-rpc.desktop");
 
     let desktop_file_content = r#"[Desktop Entry]
-Name=mpris-discord-rpc
+Name=music-discord-rpc
 Type=Application
-Exec=mpris-discord-rpc
+Exec=music-discord-rpc
 X-GNOME-Autostart-enabled=true
 Hidden=false
 StartupNotify=false
@@ -207,7 +207,7 @@ pub fn remove_xdg_autostart() {
         }
     };
     desktopt_file_path.push("autostart");
-    desktopt_file_path.push("mpris-discord-rpc.desktop");
+    desktopt_file_path.push("music-discord-rpc.desktop");
 
     match fs::remove_file(&desktopt_file_path) {
         Ok(_) => println!(
@@ -345,7 +345,7 @@ pub fn get_cover_url_musicbrainz(
     }
 
     let user_agent = format!(
-        "mpris-discord-rpc/{} (patryk.kurdziel@protonmail.com)",
+        "music-discord-rpc/{} (patryk.kurdziel@protonmail.com)",
         VERSION
     );
 

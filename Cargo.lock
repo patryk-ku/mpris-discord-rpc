@@ -882,7 +882,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mpris-discord-rpc"
+name = "music-discord-rpc"
 version = "0.5.1"
 dependencies = [
  "clap",

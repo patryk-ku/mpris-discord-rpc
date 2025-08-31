@@ -133,7 +133,7 @@ fn create_config_file(force: bool) -> (bool, PathBuf) {
             return (false, PathBuf::new());
         }
     };
-    config_file.push("mpris-discord-rpc");
+    config_file.push("music-discord-rpc");
 
     let config_dir = config_file.clone();
     config_file.push("config.yaml");
@@ -142,12 +142,12 @@ fn create_config_file(force: bool) -> (bool, PathBuf) {
         return (true, config_file);
     }
 
-    let config_text = r#"# mpris-discord-rpc configuration file
+    let config_text = r#"# music-discord-rpc configuration file
 
 # You can reset this file using the command:
-# mpris-discord-rpc --reset-config
+# music-discord-rpc --reset-config
 # Or you can manually copy the example config from repo:
-# https://github.com/patryk-ku/mpris-discord-rpc/blob/main/config.yaml
+# https://github.com/patryk-ku/music-discord-rpc/blob/main/config.yaml
 
 # If you compiled binary by yourself, you may need to provide your Last.fm API key here.
 # Or if you use precompiled binary, you can override the default Last.fm API key.
@@ -176,7 +176,7 @@ interval: 10
 small_image: playPause
 
 # Force a different player id and name to be displayed than the one actually used. "force_player_id" changes icon and "force_player_name" changes displayed text while hovering over the icon.
-# List of available icons: https://github.com/patryk-ku/mpris-discord-rpc?tab=readme-ov-file#the-icon-next-to-the-album-cover
+# List of available icons: https://github.com/patryk-ku/music-discord-rpc?tab=readme-ov-file#the-icon-next-to-the-album-cover
 # force_player_id: "custom_player_id"
 # force_player_name: "Custom Player Name"
 
