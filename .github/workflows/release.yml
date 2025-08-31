@@ -75,6 +75,7 @@ jobs:
               if: runner.os == 'macOS'
               run: |
                   tar -czf target/release/${{ matrix.target }}.tar.gz -C target/release music-discord-rpc
+                  rm target/release/music-discord-rpc
 
             - name: GH Release (Linux)
               if: startsWith(github.ref, 'refs/tags/') || runner.os == 'Linux'
