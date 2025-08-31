@@ -59,6 +59,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match settings.suboptions.command {
         Some(_) => {
             println!("Subcommands to manage the daemon are not available on macOS.");
+            println!(
+                "Check: https://github.com/patryk-ku/music-discord-rpc?tab=readme-ov-file#macos-3"
+            );
             std::process::exit(0);
         }
         None => {}
