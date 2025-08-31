@@ -410,6 +410,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         debug_log!(settings.debug_log, "player_name: {}", player_name);
         debug_log!(settings.debug_log, "player_id: {}", player_id);
 
+        // Display player ID and exit
+        if settings.get_player_id {
+            println!("\nplayer_id: {}", player_id);
+            return Ok(());
+        }
+
         // Connect with Discord
         if (is_first_time_audio && !is_video_player) || (is_first_time_video && is_video_player) {
             match client.connect() {

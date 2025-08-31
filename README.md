@@ -202,6 +202,8 @@ Options:
           Prevent MPRIS artUrl to be used as album cover if cover is not available on Last.fm
   -l, --list-players
           Displays all available music player names and exits. Use to get your player name for -a argument
+      --get-player-id
+          Show ID of currently detected player. Use when requesting missing icon
   -a, --allowlist-add <Player Name>
           Get status only from given player. Use multiple times to add several players
   -w, --video-players <Player Name>
@@ -450,7 +452,7 @@ Icons are available for these ids: `amberol`, `audacious`, `chrome`, `elisa`, `f
 **Missing your player icon?** Open an Issue with:
 
 - Icon link (png, min. 512x512 resolution - Discord requirement)
-- Player ID (obtainable by running with `--debug-log` parameter, search for the line with `[debug] player_id:`)
+- Player ID (obtainable by running `music-discord-rpc --get-player-id`)
 
 Icons are managed through Discord Developer Portal, so no app update is needed after adding new ones.
 
@@ -530,7 +532,7 @@ music-discord-rpc restart
 
 Open an Issue with:
 - Icon link (png, min. 512x512 resolution - Discord requirement)
-- Player ID (obtainable by running with `--debug-log` parameter, search for the line with `[debug] player_id:`)
+- Player ID (obtainable by running `music-discord-rpc --get-player-id`)
 
 </details>
 

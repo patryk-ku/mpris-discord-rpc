@@ -54,6 +54,11 @@ pub struct Cli {
     #[serde(skip_deserializing)]
     pub list_players: bool,
 
+    /// Show ID of currently detected player. Use when requesting missing icon.
+    #[arg(long)]
+    #[serde(skip_deserializing)]
+    pub get_player_id: bool,
+
     /// Get status only from given player. Use multiple times to add several players.
     #[arg(short = 'a', long = "allowlist-add", value_name = "Player Name", value_parser = clap::value_parser!(String))]
     pub allowlist: Vec<String>,
@@ -322,6 +327,10 @@ pub fn load_settings() -> Cli {
 
     if args.list_players {
         config.list_players = args.list_players;
+    }
+
+    if args.get_player_id {
+        config.get_player_id = args.get_player_id;
     }
 
     if args.allowlist != config.allowlist && args.allowlist.len() > 0 {
