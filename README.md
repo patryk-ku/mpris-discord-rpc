@@ -33,7 +33,12 @@ It works both on Intel-based Macs and the newer ones with Apple Silicon.
 <details>
   <summary>Instructions</summary>
 
-WIP
+Install using Homebrew:
+
+```sh
+brew tap patryk-ku/music-discord-rpc https://github.com/patryk-ku/music-discord-rpc
+brew install patryk-ku/music-discord-rpc/music-discord-rpc
+```
 
 </details>
 
@@ -159,7 +164,7 @@ Use this command to start the service in the background and enable autostart. Se
 music-discord-rpc enable
 
 # On MacOS
-brew services start mpris-discord-rpc
+brew services start music-discord-rpc
 ```
 
 Or just directly run it in the terminal:
