@@ -402,7 +402,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         #[cfg(target_os = "macos")]
         let player_id = if force_player_id.is_empty() {
-            player.player_id
+            utils::sanitize_name(player.player_id)
         } else {
             force_player_id.to_string()
         };
