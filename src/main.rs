@@ -594,6 +594,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         media_info.album_artist.as_str(),
                         &lastfm_api_key,
                     );
+
+                    // Fallback for Apple Music for album names with " - EP" and " - Single"
+                    if _cover_url.is_empty() || _cover_url == "missing-cover" {
+                        let album_name = media_info.album.trim();
+                        let album_name_without_suffix = if album_name.ends_with(" - EP") {
+                            &album_name[..album_name.len() - 5]
+                        } else if album_name.ends_with(" - Single") {
+                            &album_name[..album_name.len() - 9]
+                        } else {
+                            ""
+                        };
+
+                        if !album_name_without_suffix.is_empty() {
+                            debug_log!(
+                            settings.debug_log,
+                            "Album cover not found, attempting to use album name without the 'EP' or 'Single' suffix (Apple Music)."
+                            );
+                            debug_log!(
+                                settings.debug_log,
+                                "{} => {}",
+                                album_name,
+                                album_name_without_suffix
+                            );
+
+                            _cover_url = utils::get_cover_url(
+                                &album_id,
+                                album_name_without_suffix,
+                                _cover_url,
+                                cache_enabled,
+                                &mut album_cache,
+                                media_info.album_artist.as_str(),
+                                &lastfm_api_key,
+                            );
+                        }
+                    }
                 }
 
                 // Use Musicbrainz cover if Last.fm fails
