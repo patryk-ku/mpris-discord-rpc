@@ -245,14 +245,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             {
                 println!("");
                 println!("Displaying the list of players is not supported on macOS.");
-                println!("However, it's possible to show the ID of the currently detected player.");
+                println!(
+                    "However, it's possible to show the name of the currently detected player."
+                );
 
                 match utils::get_currently_playing() {
                     Ok(player) => {
-                        println!("Player ID: {}", player.player_id);
+                        println!("Player name: {}", player.player_id);
                         println!("");
                         println!(
-                            "You can use this ID together with the -a flag to add this player to the allowlist:"
+                            "You can use this name together with the -a flag to add this player to the allowlist:"
                         );
                         println!(r#" music-discord-rpc -a "{}""#, player.player_id);
                         println!("");
@@ -370,15 +372,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         #[cfg(target_os = "linux")]
-        let player_identity = player.identity().to_string();
+        let mut player_name = player.identity().to_string();
         #[cfg(target_os = "macos")]
-        let player_identity = player.player_name;
+        let mut player_name = player.player_id.clone();
 
         // Use video presence if player is in video_players list
         let is_video_player = settings
             .video_players
             .iter()
-            .any(|player_name| player_name == &player_identity);
+            .any(|video_player_name| video_player_name == &player_name);
         if is_video_player {
             client = &mut client_video;
             debug_log!(settings.debug_log, "Using video player presence");
@@ -387,33 +389,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             debug_log!(settings.debug_log, "Using audio player presence");
         }
 
-        let player_name = if force_player_name.is_empty() {
-            player_identity
-        } else {
-            force_player_name.to_string()
-        };
-
-        #[cfg(target_os = "linux")]
-        let player_id = if force_player_id.is_empty() {
-            utils::sanitize_name(&player_name)
-        } else {
-            force_player_id.to_string()
-        };
-
         #[cfg(target_os = "macos")]
-        let player_id = if force_player_id.is_empty() {
-            utils::sanitize_name(&player.player_id)
-        } else {
-            force_player_id.to_string()
-        };
+        {
+            player_name = utils::app_name_from_bundle_id(player_name.as_str());
+        }
+
+        let mut player_id = utils::sanitize_name(&player_name);
 
         debug_log!(settings.debug_log, "player_name: {}", player_name);
         debug_log!(settings.debug_log, "player_id: {}", player_id);
+        debug_log!(
+            settings.debug_log,
+            "force_player_name: {}",
+            force_player_name
+        );
+        debug_log!(settings.debug_log, "force_player_id: {}", force_player_id);
 
         // Display player ID and exit
         if settings.get_player_id {
             println!("\nplayer_id: {}", player_id);
             return Ok(());
+        }
+
+        #[cfg(target_os = "macos")]
+        let last_player_id = player.player_id.clone();
+
+        // Set different name and ID for RPC if enabled by argument
+        if !force_player_name.is_empty() {
+            player_name = force_player_name.to_string();
+        }
+        if !force_player_id.is_empty() {
+            player_id = force_player_id.to_string();
         }
 
         // Connect with Discord
@@ -483,6 +489,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             };
             debug_log!(settings.debug_log, "{:#?}", media_info);
+
+            // Fix allowlist on macos, if player ID changes then break loop
+            #[cfg(target_os = "macos")]
+            if media_info.player_id != last_player_id {
+                debug_log!(settings.debug_log, "Detected player change.");
+                utils::clear_activity(&mut is_activity_set, client);
+                break;
+            }
 
             if settings.only_when_playing && !media_info.is_playing {
                 is_interrupted = true;
