@@ -29,8 +29,6 @@ pub struct MediaInfo {
     pub url: String,     // Link to the currently playing media on the internet
     #[cfg(target_os = "macos")]
     pub player_id: String,
-    #[cfg(target_os = "macos")]
-    pub player_name: String,
 }
 
 // Use a Result to handle potential errors, like no media playing.
@@ -436,12 +434,13 @@ pub fn get_lastfm_avatar(username: &str, lastfm_api_key: &str) -> String {
 pub fn sanitize_name(input: &str) -> String {
     input
         .to_lowercase()
-        .split_whitespace()
-        .collect::<Vec<&str>>()
-        .join("_")
         .chars()
-        .filter(|c| c.is_alphanumeric() || *c == '_')
-        .collect()
+        .map(|c| if c.is_alphanumeric() { c } else { '_' })
+        .collect::<String>()
+        .split('_')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("_")
 }
 
 #[cfg(target_os = "linux")]
@@ -576,11 +575,6 @@ pub fn get_currently_playing() -> NowPlayingResult {
                 .as_str()
                 .unwrap_or("Unknown Player")
                 .to_string();
-            let player_name = player_id
-                .split('.')
-                .last()
-                .unwrap_or("Unknown Player")
-                .to_string(); // eg. org.videolan.vlc => vlc
             let art_url = String::new(); // For now cant get artwork remote url like with mpris
             let is_track_position = true;
             let url = String::new();
@@ -597,7 +591,6 @@ pub fn get_currently_playing() -> NowPlayingResult {
                 art_url,
                 url,
                 player_id,
-                player_name,
             })
         }
         Err(e) => {
@@ -608,4 +601,40 @@ pub fn get_currently_playing() -> NowPlayingResult {
             ).into())
         }
     }
+}
+
+// Translate bundle id to app name for some players
+#[cfg(target_os = "macos")]
+pub fn app_name_from_bundle_id(bundle_id: &str) -> String {
+    let name = match bundle_id {
+        "com.apple.Music" => "Apple Music",
+        "com.apple.iTunes" => "iTunes",
+        "com.spotify.client" => "Spotify",
+        "org.videolan.vlc" => "VLC media player",
+        "com.colliderli.iina" => "IINA",
+        "org.cogx.cog" => "Cog",
+        "com.foobar2000.mac" => "foobar2000",
+        "org.clementine-player.Clementine" => "Clementine",
+        "com.jriver.MediaCenter" => "JRiver Media Center",
+        "org.quodlibet.quodlibet" => "Quod Libet",
+        "com.swinsian.Swinsian" => "Swinsian",
+        "app.ytmdesktop.ytmdesktop" => "YouTube Music",
+        "com.tidal.desktop" => "TIDAL",
+        "com.deezer.desktop" => "Deezer",
+
+        // Browsers
+        "com.apple.Safari" => "Safari",
+        "com.google.Chrome" => "Chrome",
+        "org.chromium.Chromium" => "Chromium",
+        "org.mozilla.firefox" => "Firefox",
+        "com.microsoft.edgemac" => "Microsoft Edge",
+        "com.brave.Browser" => "Brave",
+        "com.opera.Opera" => "Opera",
+        "com.vivaldi.Vivaldi" => "Vivaldi",
+
+        // fallback
+        other => other,
+    };
+
+    name.to_string()
 }
